@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="./manifest.json">
+<title>FateForge — Infinite Character Generator</title>
+<style>
+*{box-sizing:border-box}:root{--bg:#101016;--bg2:#27213c;--text:#f5f2ff;--muted:#aaa;--panel:#17171eec;--border:#373744;--control:#25252e;--button:#eee;--buttonText:#111;--accent:#8b0000;--accent2:#b33;--shadow:#0008}body{margin:0;background:radial-gradient(circle at top,var(--bg2),var(--bg) 55%);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif;transition:background .25s,color .25s}body.theme-black{--bg:#000;--bg2:#080808;--panel:#090909f5;--border:#2b2b2b;--control:#111;--accent:#7d0000}body.theme-light{--bg:#f2f2f2;--bg2:#fff;--text:#17171b;--muted:#555;--panel:#fffffff2;--border:#ccc;--control:#fff;--button:#17171b;--buttonText:#fff;--accent:#8b0000;--shadow:#0003}body.theme-red{--bg:#120405;--bg2:#3b0b10;--panel:#1c0c0ff2;--border:#5a2026;--control:#281014;--accent:#c21f2f}body.theme-ocean{--bg:#06121a;--bg2:#123a50;--panel:#0b1c27f2;--border:#24556d;--control:#102a38;--accent:#1584b5}body.theme-forest{--bg:#07120a;--bg2:#173b20;--panel:#0c1d11f2;--border:#285638;--control:#112719;--accent:#248a45}body.theme-purple{--bg:#100817;--bg2:#3b1b4d;--panel:#1b1022f2;--border:#543568;--control:#281634;--accent:#8e45c7}
+.wrap{max-width:900px;margin:auto;padding:18px}.hero{text-align:center;padding:10px 0 4px}.hero h1{font-size:clamp(30px,8vw,52px);margin:0}.hero p{color:var(--muted);margin:5px 0 15px}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:22px;padding:16px;margin:12px 0;box-shadow:0 12px 40px #0006}
+.wheelbox{position:relative;display:grid;place-items:center;padding:8px}
+canvas{width:min(86vw,430px);height:min(86vw,430px);max-width:430px;max-height:430px;filter:drop-shadow(0 15px 28px #0008)}
+.pointer{position:absolute;top:2px;z-index:3;font-size:38px;line-height:1;filter:drop-shadow(0 2px 3px #000)}
+button{border:0;border-radius:14px;padding:14px 16px;font-size:16px;font-weight:800;cursor:pointer;background:var(--button);color:var(--buttonText)}
+button:disabled{opacity:.45}.mainbtn{width:100%;font-size:18px;margin-top:8px}.secondary{background:var(--control);color:var(--text)}
+select{width:100%;background:var(--control);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:12px;font-size:15px}
+.result{text-align:center;font-size:24px;font-weight:900;min-height:32px;margin-top:8px}
+.legend{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;color:#aaa;font-size:12px;margin:7px 0 4px}
+.swatch{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.swatch.weak{background:#777}.swatch.mid{background:#a33}.swatch.strong{background:#7d0000}.hint{text-align:center;color:#999;font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.slots{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.slotwrap{background:#202027;border-radius:14px;padding:6px;border:1px solid #393942}
+.slotwrap .slot{width:100%;border:0}
+.slottools{display:flex;gap:6px}.slottools button{flex:1;padding:8px;background:#2b2b35;color:#fff}
+.cardhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+.renamebig{width:auto;margin:0;padding:9px 12px}
+.slot{background:var(--control);color:var(--text);text-align:left;border:1px solid #444;padding:12px;border-radius:13px}
+.slot.active{outline:2px solid #fff;background:#383844}
+.slot small{display:block;color:#aaa;margin-top:3px;font-weight:500}
+.delete{position:absolute;right:8px;top:8px;padding:8px 10px;font-size:12px;background:#3a2730;color:#fff}.stat{background:#22222a;border-radius:14px;padding:12px}.stat b{display:block;color:#aaa;font-size:12px;margin-bottom:3px}.stat span{font-weight:800}
+
+/* V2.0 — Visual Generator foundation */
+.lockGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:9px}.lockBtn{padding:9px 8px;font-size:12px;text-align:left;background:var(--control);color:var(--text);border:1px solid var(--border)}.lockBtn.locked{background:var(--accent);color:#fff}.toolGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}.rarityBadge{display:inline-block;border:1px solid var(--border);background:var(--control);border-radius:999px;padding:5px 9px;font-size:12px;font-weight:900;margin:3px 3px 3px 0}.rarity-Common{border-color:#777}.rarity-Uncommon{border-color:#3d9b55}.rarity-Rare{border-color:#4d82ff}.rarity-Epic{border-color:#a45cff}.rarity-Legendary{border-color:#e6a72d}.rarity-Mythic{border-color:#e34b4b}.rarity-Cosmic{border-color:#48d8e8}.rarity-Transcendent{border-color:#d58cff}.rarity-Absolute{border-color:#fff;box-shadow:0 0 12px #fff5}.compareGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.compareResult{margin-top:12px}.compareFighter{background:var(--control);border:1px solid var(--border);border-radius:16px;padding:12px}.compareBar{height:8px;border-radius:999px;background:#333;overflow:hidden;margin:3px 0 7px}.compareFill{height:100%;background:var(--accent)}.cardActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.miniStat{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px}.miniStat:last-child{border-bottom:0}
+@media(max-width:560px){.lockGrid,.compareGrid,.cardActions,.toolGrid{grid-template-columns:1fr}}
+@media(max-width:600px){.grid,.slots{grid-template-columns:1fr 1fr}.wrap{padding:12px}.panel{border-radius:18px;padding:13px}}
+
+.history{display:flex;flex-wrap:wrap;gap:7px}.chip{background:#282832;border-radius:999px;padding:7px 10px;font-size:12px}
+.badge{display:inline-block;background:#3a2b58;border-radius:999px;padding:5px 9px;font-size:12px;margin:3px}
+
+/* Language menu */
+.menuRow{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-bottom:4px}.menuBtn{background:var(--control);color:var(--text);padding:10px 12px;border:1px solid #444}.menu{display:none;background:#1b1b23;border:1px solid #444;border-radius:16px;padding:10px;margin:6px 0 12px}.menu.open{display:block}.menuTitle{font-weight:900;margin-bottom:8px}
+.infoBtn,.themeBtn{width:100%;margin-top:8px;background:var(--control);color:var(--text);border:1px solid var(--border)}
+.themeGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:7px}.themeBtn.active{outline:2px solid var(--text)}
+.infoPanel{display:none}.infoPanel.open{display:block}.infoControls{display:grid;gap:9px}.infoDesc{line-height:1.6;color:var(--text);white-space:pre-line}.infoMeta{font-size:12px;color:var(--muted);margin-top:7px}
+.langBtns{display:flex;gap:8px}.langBtn{flex:1;background:var(--control);color:var(--text);border:1px solid #444}.langBtn.active{outline:2px solid #fff;background:#3b3b49}
+
+.rpg-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.rpg-stat{background:var(--control);border:1px solid var(--border);border-radius:14px;padding:10px}
+.rpg-stat b{display:block;margin-bottom:6px}
+.rating{display:inline-flex;gap:1px;vertical-align:middle;filter:drop-shadow(0 0 4px #ffcc5555)}
+.star{position:relative;display:inline-block;font-size:1.15rem;line-height:1;color:#555;letter-spacing:-2px}
+.star::before{content:"★";position:absolute;inset:0;background:linear-gradient(90deg,#ffd45a var(--fill),#555 var(--fill));-webkit-background-clip:text;background-clip:text;color:transparent}
+.star{color:#555}
+.board-card{border:1px solid var(--border);background:var(--panel);border-radius:18px;padding:14px;margin-top:12px;box-shadow:0 8px 25px #0004}
+.board-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.board-meta{color:var(--muted);font-size:.9rem;margin-top:4px}
+@media(max-width:560px){.rpg-stats{grid-template-columns:1fr}}
+
+.categoryDock{position:sticky;top:0;z-index:20;background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:9px;margin:8px 0 12px;box-shadow:0 8px 25px #0005}.categoryDock label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}.categoryDock select{font-weight:800}.mainnav{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0 14px}.navBtn{background:var(--control);color:var(--text);border:1px solid var(--border);padding:11px 8px}.navBtn.active{background:var(--accent);color:#fff;outline:2px solid #ffffff33}.tabPanel{display:none}.tabPanel.active{display:block}.sectionHead{display:flex;justify-content:space-between;align-items:center;gap:10px}.arenaPickers{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}.arenaPickers label{display:block;margin-bottom:6px}.arenaPreview{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:stretch;margin-top:12px}.fighter{background:var(--control);border:1px solid var(--border);border-radius:16px;padding:12px}.fighter h3{margin:0 0 6px}.fighter .mini{color:var(--muted);font-size:12px;line-height:1.5}.vs{display:grid;place-items:center;font-size:24px;font-weight:1000}.arenaStatus{margin:12px 0}.battleLog{margin-top:12px;display:grid;gap:7px}.battleLine{background:var(--control);border:1px solid var(--border);border-radius:12px;padding:10px;line-height:1.45}.battleRound{font-weight:900;color:var(--text);padding:4px 0}.winner{font-weight:1000;font-size:20px;text-align:center;padding:14px;border-radius:14px;background:var(--accent);color:#fff}.emptyArena{padding:16px;border:1px dashed var(--border);border-radius:14px;text-align:center;color:var(--muted)}
+.visualGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.visualControls{background:var(--control);border:1px solid var(--border);border-radius:16px;padding:14px}.visualControls label{display:block;font-weight:800;margin:0 0 6px}.visualControls .field{margin-bottom:10px}.visualActions{display:flex;gap:8px;flex-wrap:wrap}.visualPreview{background:var(--control);border:1px solid var(--border);border-radius:16px;padding:14px;line-height:1.55}.visualResult{margin-top:12px;border:1px dashed var(--border);border-radius:16px;overflow:hidden;background:#08090d;min-height:300px;display:grid;place-items:center}.visualResult img{display:block;width:100%;max-height:760px;object-fit:contain}.visualMeta{padding:12px;border-top:1px solid var(--border);font-size:12px;color:var(--muted);background:var(--control)}.visualStatus{padding:12px;border-radius:12px;margin-top:10px}.visualStatus.ok{border:1px solid #2b9a5b;background:#12351f}.visualStatus.err{border:1px solid #a83d3d;background:#3a1616}.visualStatus.busy{border:1px solid var(--border)}
+@media(max-width:700px){.visualGrid{grid-template-columns:1fr}.visualResult{min-height:240px}}
+.weaponWeaknessPanel{display:none}.weaponWeaknessPanel.open{display:block}.weaponWheelBox{position:relative;display:grid;place-items:center;padding:6px}.weaponWheelBox canvas{width:min(78vw,330px);height:min(78vw,330px);max-width:330px;max-height:330px}.weaponWheelBox .pointer{top:0;font-size:30px}.weaponTarget{margin:8px 0 10px;text-align:center;font-weight:900;font-size:18px}.weaponProps{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:7px 0}.weaponProp{background:var(--control);border:1px solid var(--border);border-radius:999px;padding:5px 9px;font-size:12px;font-weight:800}.weaponHint{font-size:12px;color:var(--muted);text-align:center}
+@media(max-width:600px){.arenaPickers{grid-template-columns:1fr}.arenaPreview{grid-template-columns:1fr}.vs{min-height:24px}}
+</style>
+</head>
+<body><div class="wrap">
+<header class="hero">
+ <div class="menuRow"><button class="menuBtn" id="menuBtn" onclick="toggleMenu()">☰ Menü</button></div>
+ <div class="menu" id="menu">
+  <div class="menuTitle" id="menuTitle">⚙️ Ayarlar</div>
+  <div class="menuTitle" id="languageTitle">🌐 Dil</div>
+  <div class="langBtns"><button class="langBtn active" id="langTR" onclick="setLanguage('tr')">🇹🇷 Türkçe</button><button class="langBtn" id="langEN" onclick="setLanguage('en')">🇬🇧 English</button></div>
+  <div class="menuTitle" id="themeTitle" style="margin-top:12px">🎨 Tema</div>
+  <div class="themeGrid">
+   <button class="themeBtn" data-theme="dark" onclick="setTheme('dark')" id="themeDark">🌌 Koyu</button>
+   <button class="themeBtn" data-theme="black" onclick="setTheme('black')" id="themeBlack">⬛ Siyah</button>
+   <button class="themeBtn" data-theme="light" onclick="setTheme('light')" id="themeLight">⬜ Beyaz</button>
+   <button class="themeBtn" data-theme="red" onclick="setTheme('red')" id="themeRed">🟥 Kızıl</button>
+   <button class="themeBtn" data-theme="ocean" onclick="setTheme('ocean')" id="themeOcean">🌊 Okyanus</button>
+   <button class="themeBtn" data-theme="forest" onclick="setTheme('forest')" id="themeForest">🌲 Orman</button>
+   <button class="themeBtn" data-theme="purple" onclick="setTheme('purple')" id="themePurple">🟪 Mor</button>
+  </div>
+  <button class="infoBtn" id="infoBtn" onclick="toggleInfo()">📚 Bilgi Arşivi</button><button class="infoBtn" id="boardBtn" onclick="toggleBoard()">👥 Kayıtlı Karakterler Panosu</button>
+ </div>
+ <nav class="mainnav" aria-label="FateForge navigation">
+  <button class="navBtn active" data-tab="forge" onclick="switchTab('forge')">🎡 Forge</button>
+  <button class="navBtn" data-tab="vault" onclick="switchTab('vault')">👥 Vault</button>
+  <button class="navBtn" data-tab="arena" onclick="switchTab('arena')">⚔️ Arena</button>
+ <button class="navBtn" data-tab="generating" onclick="switchTab('generating')">🎨 Generating</button>
+ </nav>
+ <h1>⚒️ FateForge</h1><p id="versionText">Infinite Character Generator • V2.1</p>
+</header>
+
+<div id="tab-forge" class="tabPanel active">
+<div class="categoryDock"><label id="categoryDockLabel">🎯 Çark kategorisi</label><select id="categoryDock" onchange="syncCategory(this.value)"></select></div>
+<section class="panel">
+ <div class="wheelbox"><div class="pointer">🔻</div><canvas id="wheel" width="700" height="700"></canvas></div>
+ <div id="wheelTitle" class="result">Hazırsan kaderi çevir 😈</div>
+ <div id="wheelHint" class="hint">Her turda farklı bir çark kullanabilirsin.</div><div class="legend"><span><i class="swatch weak"></i><span id="legendWeak">Güçsüz / kötü</span></span><span><i class="swatch mid"></i><span id="legendMid">Orta</span></span><span><i class="swatch strong"></i><span id="legendStrong">Güçlü / iyi</span></span></div>
+ <button id="spin" class="mainbtn" onclick="spin()">🎡 ÇARKI ÇEVİR</button>
+</section>
+
+<section class="panel">
+ <label><b id="categoryLabel">Çark kategorisi</b></label>
+ <select id="category" onchange="syncCategory(this.value)"></select>
+ <button id="newSlotBtn" class="secondary" style="width:100%;margin-top:9px" onclick="createSlot()">➕ YENİ KARAKTER SLOTU AÇ</button>
+ <div class="toolGrid"><button id="randomBtn" class="secondary" onclick="generateCharacter()">🎲 AKTİF SLOTA RASTGELE DOLDUR</button><button id="fullGenerateBtn" class="secondary" onclick="fullGenerateCharacter()">⚡ TAM KARAKTER OLUŞTUR</button></div>
+ <div class="panel" style="margin:10px 0 0;padding:11px;background:transparent"><b id="lockTitle">🔒 Çark Kilitleri</b><div class="hint" id="lockHint">Tam karakter üretirken kilitli kategoriler değişmez.</div><div id="lockGrid" class="lockGrid"></div></div>
+</section>
+
+<section class="panel weaponWeaknessPanel" id="weaponWeaknessPanel">
+ <h3 id="specificWeaponTitle" style="margin-top:0">☠️ Belirli Silah Zayıflığı</h3>
+ <p id="specificWeaponHint" class="weaponHint">Bu karakter yalnızca seçilen silaha karşı özel zayıflığa sahip.</p>
+ <div class="weaponWheelBox"><div class="pointer">🔻</div><canvas id="weaponWheel" width="520" height="520"></canvas></div>
+ <div id="weaponTarget" class="weaponTarget">Henüz hedef silah belirlenmedi.</div>
+ <div id="weaponProps" class="weaponProps"></div>
+ <button id="weaponWeaknessSpin" class="secondary mainbtn" onclick="spinWeaknessWeapon()">⚔️ HEDEF SİLAHI ÇEVİR</button>
+</section>
+
+<section class="panel infoPanel" id="boardPanel">
+ <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+  <h2 id="boardTitle" style="margin:0">👥 Kayıtlı Karakterler Panosu</h2>
+  <button class="secondary" onclick="toggleBoard()">✕</button>
+ </div>
+ <p class="hint" id="boardHint">Kaydettiğin karakterlerini ve RPG istatistiklerini yıldız derecelendirmesiyle incele.</p>
+ <div id="boardList"></div>
+</section>
+
+<section class="panel infoPanel" id="infoPanel">
+ <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h2 id="infoTitle" style="margin:0">📚 Bilgi Arşivi</h2><button class="secondary" onclick="toggleInfo()">✕</button></div>
+ <p class="hint" id="infoHint">Irkları, yetenekleri, silahları ve diğer kader seçeneklerini detaylı incele.</p>
+ <div class="infoControls">
+  <select id="infoCategory" onchange="updateInfoItems()"></select>
+  <select id="infoItem" onchange="renderInfo()"></select>
+ </div>
+ <div class="stat" style="margin-top:10px"><b id="infoItemTitle">Seçim</b><span id="infoDescription" class="infoDesc">—</span></div>
+ <div class="infoMeta" id="infoMeta"></div>
+</section>
+
+</div>
+
+<section id="tab-arena" class="tabPanel">
+ <section class="panel">
+  <div class="sectionHead"><div><h2 id="arenaTitle" style="margin:0">⚔️ FateForge Arena</h2><p id="arenaHint" class="hint" style="margin:5px 0 0">Kaydettiğin iki karakteri seç ve yetenek, silah, savunma ve zayıflık etkileşimleri olan tur bazlı savaşı başlat.</p></div></div>
+  <div class="arenaPickers">
+   <div><label><b id="fighterALabel">🟥 Savaşçı A</b></label><select id="arenaA" onchange="renderArenaPreview()"></select></div>
+   <div><label><b id="fighterBLabel">🟦 Savaşçı B</b></label><select id="arenaB" onchange="renderArenaPreview()"></select></div>
+  </div>
+  <div id="arenaPreview" class="arenaPreview"></div>
+  <button id="arenaStart" class="mainbtn" onclick="startArenaBattle()">⚔️ SAVAŞI BAŞLAT</button>
+  <div id="arenaStatus" class="arenaStatus hint">Önce en az iki karakter oluştur.</div>
+  <div id="battleLog" class="battleLog"></div>
+ </section>
+</section>
+
+<section id="tab-generating" class="tabPanel">
+ <section class="panel">
+  <div class="sectionHead"><div><h2 id="visualTitle">🎨 FateForge Visual Generator</h2><p id="visualHint">Create a full-body visual from the exact saved Character Card profile.</p></div></div>
+  <div class="visualGrid">
+   <div class="visualControls">
+    <div class="field"><label id="visualCharacterLabel">Character</label><select id="visualCharacter" onchange="renderVisualPreview()"></select></div>
+    <div class="field"><label id="visualStyleLabel">Style</label><select id="visualStyle"><option value="cinematic fantasy illustration">Cinematic Fantasy</option><option value="dark fantasy illustration">Dark Fantasy</option><option value="anime fantasy character illustration">Anime Fantasy</option><option value="semi-realistic fantasy concept art">Semi-Realistic Concept Art</option><option value="high-detail RPG character concept art">RPG Concept Art</option></select></div>
+    <div class="field"><label id="visualRatioLabel">Aspect Ratio</label><select id="visualRatio"><option value="2:3">2:3 Portrait</option><option value="1:1">1:1 Square</option><option value="3:4">3:4 Portrait</option><option value="4:5">4:5 Portrait</option><option value="16:9">16:9 Landscape</option></select></div>
+    <div class="visualActions"><button class="mainbtn" id="visualGenerateBtn" onclick="generateVisualCharacter()">🎨 GENERATE IMAGE</button><button class="secondary" onclick="switchTab('vault')">👥 Vault</button></div>
+    <div id="visualStatus" class="visualStatus" style="display:none"></div>
+   </div>
+   <div id="visualPreview" class="visualPreview"></div>
+  </div>
+  <div id="visualResult" class="visualResult"><div class="emptyArena">Select a character and generate its visual.</div></div><p class="hint" style="margin-top:10px">🔐 The image API key is kept server-side. FateForge sends only the saved Character Card profile and visual options.</p>
+ </section>
+</section>
+<section id="tab-vault" class="tabPanel">
+<section class="panel">
+ <h2 id="slotsTitle" style="margin-top:0">👥 Karakter Slotları</h2>
+ <div id="slots" class="slots"></div>
+</section>
+<section id="card" class="panel">
+ <h2 id="cardTitle" style="margin-top:0">📜 Karakter Kartı</h2>
+ <div class="hint" id="cardHint">“Tam karakter oluştur” dediğinde sonuçlar burada toplanacak.</div>
+</section>
+<section class="panel">
+ <h2 id="compareTitle" style="margin-top:0">⚖️ Karakter Karşılaştırma</h2>
+ <div class="compareGrid"><select id="compareA" onchange="renderComparison()"></select><select id="compareB" onchange="renderComparison()"></select></div>
+ <div id="compareResult" class="compareResult"></div>
+</section>
+
+</section>
+
+
+
+<section class="panel">
+ <h3 id="futureTitle" style="margin-top:0">✨ FateForge V2.1</h3>
+ <span class="badge" id="badgeFull">Full Generate</span><span class="badge" id="badgeLock">Wheel Lock</span><span class="badge" id="badgeExport">Character Card Export</span><span class="badge" id="badgeRarity">Rarity</span><span class="badge" id="badgeAbsurd">Absurdity Score</span><span class="badge" id="badgeCompare">Character Compare</span><span class="badge" id="badgeCombat">Combat Engine</span>
+</section>
+</div>
+<script>
+const DATA={
+"🧬 Irk":["İnsan","Elf","Karanlık Elf","Cüce","Ork","Goblin","Ogre","Troll","Halfling","Gnome","Vampir","Dhampir","Lycan","Lich","Skeleton","Ghoul","Demon","Devil","Imp","Angel","Seraph","Fallen Angel","Dragonkin","Ejderha","Wyvern","Phoenix","Beastkin","Catfolk","Wolfkin","Kitsune","Slime","Elemental","Fairy","Dryad","Treant","Merfolk","Naga","Golem","Construct","Giant","Titan","Celestial","Abyssborn","Voidborn","Eldritch","Spirit","Dullahan","Revenant","Starborn","Feyborn","Astral Human"],
+"🧬 Sub-Race":["Yok","Kadim Soy","Asil Soy","Kraliyet Soyu","İlahi Soy","Demonik Soy","Ejderha Soyu","Titan Soyu","Void Soyu","Abyssal Soy","Celestial Soy","Primordial Soy","Mutasyona Uğramış","Lanetli Alt Irk","Kutsanmış Alt Irk","Hibrit Alt Irk","Elemental Alt Irk","Astral Alt Irk","Kozmik Alt Irk","Parazit Soy","Yıldız Doğumlu"],
+"⚡ Yetenek":["Ateş Manipülasyonu","Su Manipülasyonu","Buz Manipülasyonu","Yıldırım Manipülasyonu","Rüzgâr Manipülasyonu","Toprak Manipülasyonu","Metal Manipülasyonu","Bitki Manipülasyonu","Gölge Manipülasyonu","Işık Manipülasyonu","Yerçekimi Manipülasyonu","Telekinezi","Telepati","Teleportasyon","Zaman Manipülasyonu","Uzay Manipülasyonu","Ruh Manipülasyonu","Mana Manipülasyonu","Kan Manipülasyonu","Enerji Emilimi","Enerji Patlaması","Rejenerasyon","Ölümsüzlük","Şekil Değiştirme","Boyut Cebi","Bariyer Üretimi","İllüzyon","Zihin Kontrolü","Kader Algısı","Olasılık Manipülasyonu","Gerçeklik Bükme","Madde Manipülasyonu","Enerji Manipülasyonu","Ses Manipülasyonu","Titreşim Manipülasyonu","Canavar Çağırma","Ruh Çağırma","Element Çağırma","Klonlama","Gölge Klonları","Hızlandırma","Yavaşlatma","Güç Çalma","Yetenek Kopyalama","Yetenek Mühürleme","Lanetleme","Arındırma","Şifa","Yaşam Enerjisi Emme","Kemik Manipülasyonu","Zehir Üretimi","Asit Üretimi","Kristal Üretimi","Manyetizma","Plazma Kontrolü","Uçuş","Süper Güç","Süper Hız","Süper Duyu","Ejderha Nefesi","Void Enerjisi","Kaos Enerjisi","Kozmik Enerji","Astral Projeksiyon","Rüya Manipülasyonu","Kabus Manipülasyonu","Hafıza Manipülasyonu","Bilgi Algısı","Gelecek Görüsü","Geçmiş Görüsü","Rün Büyüsü","Kan Büyüsü","Ruh Büyüsü","Karanlık Büyü","Kutsal Büyü","Element Büyüsü","Simya","Silah Ustalığı","Dövüş Ustalığı","Okçuluk","Suikast","Şans Manipülasyonu","Korku Aurası","Büyü Bozma","Büyü Yansıtma","Saldırı Yansıtma","Hasar Emilimi","Adaptasyon","Evrim","Parçalanma","Yeniden Yapılanma","Mühür Kırma","Alan Kontrolü","Boyut Yarığı","Kozmik Algı","Yıldız Enerjisi","Güneş Enerjisi","Ay Enerjisi","Kaos Formu","Void Formu","Dev Formu","Miniaturizasyon","Mükemmel Hafıza","Stratejik Öngörü","İlahi Bereket","İlahi Lanet","Kader Kesme","Ruh Kesme","Mekân Kesme","Zaman Kesme","Gerçeklik Kesme","Nedensellik Manipülasyonu","Varlık Silme","Kavramsal Manipülasyon","Sonsuz Bölünme","Mutlak Savunma","Mutlak Algı","Mutlak Hız","Nedensellik Kesme","Boyut Yok Etme","Karanlık Madde Manipülasyonu","Anti-Madde Manipülasyonu","Yerçekimi Alanı","Kütle Manipülasyonu","Yoğunluk Manipülasyonu","Isı Manipülasyonu","Soğukluk Manipülasyonu","Elektrik Üretimi","Manyetik Alan Oluşturma","Radyasyon Manipülasyonu","Nükleer Enerji Kontrolü","Ses Patlaması","Frekans Manipülasyonu","Işık Kırılması","Prizma Manipülasyonu","Uzay Katlama","Portal Açma","Cep Evren Oluşturma","Boyutlar Arası Geçiş","Zaman Durdurma","Zaman Atlama","Zaman Döngüsü","Zaman Hırsızlığı","Yaşam Yaratma","Diriltme","Ruh Bedenleştirme","Ruh Bağlama","Ruh Zinciri","Beden Ele Geçirme","Kanat Oluşturma","Ekstrem Rejenerasyon","Ölümsüz Hücreler","Kozmik Rejenerasyon","Hücre Manipülasyonu","Organ Yenileme","Kemik Zırhı","Biyolojik Evrim","Adaptif Evrim","Mutasyon","Parazit Kontrolü","Simbiyoz","Mimikri","Madde Yaratma","Madde Yok Etme","Atom Manipülasyonu","Molekül Manipülasyonu","Enerji Üretimi","Enerji Dönüşümü","Enerji Sıfırlama","Saldırı Güçlendirme","Savunma Güçlendirme","Hız Çalma","Ömür Çalma","Güç Mühürleme","Güç Uyandırma","Kavramsal Silme","Kavramsal Yaratma","Nedensellik Yeniden Yazımı","Kader Yeniden Yazımı","Gerçeklik Yeniden Yazımı","Kuralsızlaştırma","Mutlak Emir","Varoluş Algısı","Boyutlararası Algı","Kozmik Bilinç","Omniscience","Omnipresence","Omnipotence Parçası","Kaos Manipülasyonu","Düzen Manipülasyonu","Entropy Manipülasyonu","Hiçlik Manipülasyonu","Yaratım Yeteneği","Yok Oluş Yeteneği"],
+"💪 Güç Seviyesi":["Çakıl Taşı","Kaya","Duvar","Oda","Ev","Bina","Kule","Küçük Köy","Büyük Köy","Kasaba","Küçük Şehir","Şehir","Büyük Şehir","Metropol","Dağ","Büyük Dağ","Sıradağ","Ada","Büyük Ada","Ülke","Büyük Ülke","Kıta","Büyük Kıta","Uydu","Gezegen","Büyük Gezegen","Gaz Devi","Cüce Yıldız","Yıldız","Büyük Yıldız","Yıldız Sistemi","Nebula","Güneş Sistemi Kümesi","Galaksi","Büyük Galaksi","Galaksi Kümesi","Süper Küme","Evren","Gözlemlenebilir Evren","Büyük Evren","Çoklu Evren","Omniverse","Sonsuz Kozmos","Kozmik Sonsuzluk","Sonsuz Ötesi"],
+"📈 Potansiyel":["F","E","D","C","B","A","S","SS","SSS","EX","EX+","???"],
+"🧠 IQ":['Aşırı Aptal (40–60 IQ)', 'Aptal (61–75 IQ)', 'Düşük Zekâ (76–85 IQ)', 'Ortalama Altı (86–90 IQ)', 'Sınırda Ortalama (91–95 IQ)', 'Düşük Ortalama (96–99 IQ)', 'Ortalama (100 IQ)', 'Yüksek Ortalama (101–109 IQ)', 'Zeki (110–119 IQ)', 'Çok Zeki (120–129 IQ)', 'Üstün Zekâ (130–139 IQ)', 'Dâhi (140–149 IQ)', 'Büyük Dâhi (150–159 IQ)', 'Olağanüstü Dâhi (160–169 IQ)', 'Süper Dâhi (170–179 IQ)', 'İnsanüstü Zekâ (180–189 IQ)', 'Deha Ötesi (190–200 IQ)', 'Kozmik Zekâ (201–210 IQ)', 'Gezegensel Dâhi (211–220 IQ)', 'Yıldız Dâhisi (221–230 IQ)', 'Galaktik Dâhi (231–240 IQ)', 'Galaksilerarası Zihin (241–250 IQ)', 'Evrensel Zekâ (251–260 IQ)', 'Çoklu Evren Zekâsı (261–270 IQ)', 'Omniversal Dâhi (271–280 IQ)', 'Gerçeklik Dâhisi (281–290 IQ)', 'Kavramsal Zihin (291–295 IQ)', 'Her Şeyi Kavrayan (296–299 IQ)', 'Her Şeyi Bilen (300 IQ)', 'Mutlak Bilinç (300+ IQ)'],
+"🧠 Kişilik":["Nazik","Soğukkanlı","Kibirli","Kaotik","Cesur","Korkak","Aşırı Meraklı","Sessiz","Geveze","Onurlu","Acımasız","Merhametli","Açgözlü","Fedakâr","Tembel","Disiplinli","Çılgın","Dâhi","Saf","Manipülatif","Paranoyak","Şakacı","Aşırı Ciddi","Umursamaz","Takıntılı"],
+"⚔️ Silah":["Yok","Tahta Kılıç","Kısa Kılıç","Uzun Kılıç","Rapier","Katana","Büyük Kılıç","Çift Kılıç","İkiz Bıçak","Falchion","Scimitar","Mızrak","Uzun Mızrak","Trident","Glaive","Halberd","Partizan","Balta","Çift Elli Balta","Savaş Baltası","Çekiç","Savaş Çekici","Balyoz","Hançer","Çift Hançer","Katar","Pençe","Kama","Yay","Uzun Yay","Kısa Yay","Tatar Yayı","Arbalet","Büyücü Asası","Savaş Asası","Büyü Kitabı","Grimoire","Scythe","Savaş Tırpanı","Zincirli Silah","Kusari-gama","Whip","Gauntlet","Dövüş Eldiveni","Mistik Eldiven","Mızraklı Zincir","Kalkan","Bıçak Fırtınası","Atış Bıçakları","Tabanca","Tüfek","Enerji Silahı","Plazma Silahı","Lazer Kılıcı","Rünlü Silah","Ruh Silahı","Kan Silahı","Lanetli Silah","Kutsal Silah","İlahi Silah","Ejderha Yapımı Silah","Titan Yapımı Silah","Celestial Silah","Abyss Silahı","Void Silahı","Astral Silah","Kozmik Silah","Primordial Silah","Kavramsal Silah","Gerçeklik Kesici","Kader Silahı","Nedensellik Silahı","Boyut Yok Edici","Tanrı Katili Silah","Adsız Kozmik Eser"],
+"🛡️ Savunma":["Normal Beden","Kalın Deri","Çelik Deri","Mana Bariyeri","Element Bariyeri","Ruh Bariyeri","Rejenerasyon","Hızla Yenilenme","Hasar Emilimi","Hasar Yansıtma","Adaptasyon","Ölümsüz Beden","İlahi Beden","Ejderha Beden","Void Beden","Mutlak Savunma"],
+"☠️ Zayıflık":["Yok","Ateş","Buz","Yıldırım","Kutsal Enerji","Karanlık Enerji","Zehir","Ruh Saldırıları","Mana Tükenmesi","Fiziksel Hasar","Zihin Saldırıları","Yaşlanma","Belirli Bir Element","Belirli Bir Silah","Kendi Gücünü Fazla Kullanmak","Kader Tarafından Mühürlenmiş"],
+"👑 Statü":["Sıradan Biri","Dilenci","Çiftçi","Köylü","Zanaatkâr","Tüccar","Avcı","Muhafız","Maceraçı","Paralı Asker","Asker","Teğmen","Yüzbaşı","Binbaşı","General","Savaş Kahramanı","Komutan","Büyücü Çırağı","Büyücü","Başbüyücü","Suikastçı","Usta Suikastçı","Şövalye","Paladin","Soylu","Dük/Düşes","Prens/Prenses","Veliaht","Kral/Kraliçe","İmparator/İmparatoriçe","İmparatorluk Hükümdarı","Tarikat Üyesi","Tarikat Ustası","Tarikat Lideri","Kutsal Şampiyon","Ejderha Lordu","Demon Lordu","Ölüler Kralı","Canavar Kralı","Kıta Hükümdarı","Dünya Hakimi","Gezegen Hükümdarı","Yıldız Lordu","Galaksi Hükümdarı","Kozmik Hükümdar","Çoklu Evren Hükümdarı","Tanrı Adayı","Yarı Tanrı","Tanrı","Yüce Tanrı","Kadim Tanrı","Kozmik Varlık","Primordial Varlık","Gerçeklik Hükümdarı","Kavramsal Varlık","Kadim Varlık","Adsız Varlık"],
+"🎭 Kader":["Sıradan Hayat","Kahraman","Kötü Adam","Anti-Kahraman","Seçilmiş Kişi","Kayıp Prens","Kayıp Tanrı","Dünyayı Kurtaracak","Dünyayı Yok Edecek","Tanrı Olacak","Tanrı Katili Olacak","Kaderin Hatası","Sonsuz Döngüye Hapsolmuş","Gücünün %90'ı Mühürlü","Henüz Kaderi Yazılmamış"],
+"🍀 Talih":["-100 Lanetli","-75 Çok Kötü","-50 Kötü","-25 Şanssız","0 Normal","25 Biraz Şanslı","50 Şanslı","75 Çok Şanslı","100 İlahi Şans"]
+};
+
+
+DATA["⚡ İkincil Yetenek"]=DATA["⚡ Yetenek"].slice();
+DATA["🎂 Yaş"]=["Çocuk (5-12)","Ergen (13-17)","Genç (18-25)","Yetişkin (26-40)","Olgun (41-60)","Yaşlı (61-100)","Kadim (101-500)","Antik (501-1.000)","Efsanevi (1.001-10.000)","Kadim Varlık (10.001-100.000)","Kozmik Çağ (100.001+)"];
+DATA["⚧️ Cinsiyet"]=["Erkek","Kadın","Non-binary"];
+DATA["📏 Boy"]=["140 cm","145 cm","150 cm","155 cm","160 cm","165 cm","170 cm","175 cm","180 cm","185 cm","190 cm","195 cm","200 cm","205 cm","210 cm","215 cm","220 cm"];
+const SUBRACE_BY_RACE={
+"İnsan":["Yok","Asil İnsan","Kraliyet Kanı","Aziz Kanı","Ejderha Kanı","Void Dokunuşlu İnsan","Kozmik İnsan","Kadim İnsan","Büyücü Soyu","Savaşçı Soyu"],
+"Elf":["Yok","High Elf","Wood Elf","Moon Elf","Sun Elf","Star Elf","Ancient Elf","Celestial Elf","Void Elf","Spirit Elf"],
+"Karanlık Elf":["Yok","Shadow Elf","Abyssal Elf","Blood Elf","Night Elf","Dread Elf","Void Elf","Ancient Dark Elf"],
+"Cüce":["Yok","Dağ Cücesi","Demir Cüce","Runik Cüce","Kraliyet Cücesi","Titanblood Dwarf","Volkanik Cüce","Kadim Cüce"],
+"Ork":["Yok","Hobgoblin","High Orc","War Orc","Berserker Orc","Royal Orc","Ogreblood Orc","Demonblood Orc"],
+"Goblin":["Yok","Hobgoblin","Goblin Shaman","Goblin Alchemist","Royal Goblin","Goblin King Bloodline","Abyss Goblin","Void Goblin","Ancient Goblin","Titanblood Goblin"],
+"Ogre":["Yok","High Ogre","Mountain Ogre","War Ogre","Royal Ogre","Ancient Ogre","Titan Ogre","Demonblood Ogre"],
+"Troll":["Yok","Cave Troll","Mountain Troll","Forest Troll","Ice Troll","War Troll","Ancient Troll","Regenerating Troll"],
+"Vampir":["Yok","Asil Vampir","Kraliyet Vampiri","Kan Lordu","Nightborn","Elder Vampire","True Vampire","Primordial Vampire"],
+"Dhampir":["Yok","Asil Dhampir","Daywalker","Nightwalker","Bloodborn","Elder Dhampir","Void Dhampir"],
+"Demon":["Yok","Lesser Demon","Greater Demon","Demon Lord Bloodline","Abyssal Demon","Primordial Demon","Chaos Demon","Void Demon"],
+"Devil":["Yok","Lesser Devil","Greater Devil","Archdevil Bloodline","Hellborn","Abyssal Devil","Primordial Devil"],
+"Angel":["Yok","High Angel","Battle Angel","Seraph Bloodline","Saintborn","Celestial Angel","Ancient Angel","Primordial Angel"],
+"Seraph":["Yok","High Seraph","Arch-Seraph","Solar Seraph","Celestial Seraph","Primordial Seraph","Cosmic Seraph"],
+"Fallen Angel":["Yok","Dark Seraph","Abyssal Fallen","Demonblood Fallen","Void Fallen","Ancient Fallen"],
+"Dragonkin":["Yok","Draconic Bloodline","Elder Dragonblood","Ancient Dragonblood","Celestial Dragonblood","Void Dragonblood","Primordial Dragonblood"],
+"Ejderha":["Yok","Young Dragon","Elder Dragon","Ancient Dragon","Celestial Dragon","Abyssal Dragon","Void Dragon","Primordial Dragon","Cosmic Dragon"],
+"Wyvern":["Yok","Storm Wyvern","Fire Wyvern","Ice Wyvern","Venom Wyvern","Ancient Wyvern","Void Wyvern"],
+"Phoenix":["Yok","Flame Phoenix","Solar Phoenix","Celestial Phoenix","Immortal Phoenix","Primordial Phoenix"],
+"Beastkin":["Yok","Feral Bloodline","Ancient Beastblood","Royal Beastkin","Divine Beastkin","Celestial Beastkin"],
+"Catfolk":["Yok","Wildcat Bloodline","Panther Bloodline","Royal Catfolk","Moon Catfolk","Celestial Catfolk"],
+"Wolfkin":["Yok","Dire Wolf Bloodline","Moon Wolf","Alpha Bloodline","Ancient Wolfkin","Celestial Wolfkin"],
+"Kitsune":["Yok","One-Tail","Three-Tail","Five-Tail","Seven-Tail","Nine-Tail","Celestial Kitsune","Ancient Kitsune"],
+"Slime":["Yok","Metal Slime","Mimic Slime","Magic Slime","Predator Slime","King Slime","Demon Slime","Void Slime"],
+"Elemental":["Yok","Fire Elemental","Water Elemental","Earth Elemental","Air Elemental","Storm Elemental","Astral Elemental","Primordial Elemental"],
+"Fairy":["Yok","Forest Fairy","Moon Fairy","Sun Fairy","Battle Fairy","Ancient Fairy","Celestial Fairy"],
+"Dryad":["Yok","Forest Dryad","Ancient Dryad","World Tree Dryad","Celestial Dryad","Primordial Dryad"],
+"Treant":["Yok","Ancient Treant","World Tree Treant","Elder Treant","Primordial Treant"],
+"Merfolk":["Yok","Deep Sea Merfolk","Sirenblood","Royal Merfolk","Abyssal Merfolk","Ancient Merfolk"],
+"Naga":["Yok","Sea Naga","Cobra Naga","Royal Naga","Ancient Naga","Celestial Naga"],
+"Golem":["Yok","Stone Golem","Iron Golem","Mithril Golem","Adamantite Golem","Ancient Golem","Titan Golem"],
+"Construct":["Yok","Magic Construct","War Construct","Ancient Construct","Divine Construct","Void Construct"],
+"Giant":["Yok","Hill Giant","Stone Giant","Frost Giant","Fire Giant","Storm Giant","Ancient Giant"],
+"Titan":["Yok","Lesser Titan","Battle Titan","Elemental Titan","Celestial Titan","Ancient Titan","Primordial Titan"],
+"Celestial":["Yok","High Celestial","Celestial Lord Bloodline","Seraphic Celestial","Ancient Celestial","Primordial Celestial"],
+"Abyssborn":["Yok","Abyssal Noble","Abyssal Lord Bloodline","Deep Abyssborn","Ancient Abyssborn","Primordial Abyssborn"],
+"Voidborn":["Yok","Void-Touched","Deep Voidborn","Void Lord Bloodline","Ancient Voidborn","Primordial Voidborn","Outer Voidborn"],
+"Eldritch":["Yok","Lesser Eldritch","Ancient Eldritch","Outer Eldritch","Primordial Eldritch","Cosmic Eldritch"],
+"Spirit":["Yok","Nature Spirit","Elemental Spirit","Ancient Spirit","Divine Spirit","Primordial Spirit"],
+"Dullahan":["Yok","Death Knight Bloodline","Headless Lord","Abyssal Dullahan","Ancient Dullahan"],
+"Revenant":["Yok","Cursed Revenant","Royal Revenant","Ancient Revenant","Abyssal Revenant","Immortal Revenant"],
+"Starborn":["Yok","Star-Touched","Nebula Bloodline","Stellar Bloodline","Celestial Starborn","Ancient Starborn","Primordial Starborn"],
+"Feyborn":["Yok","High Fey","Ancient Fey","Royal Fey","Celestial Fey","Primordial Fey"],
+"Astral Human":["Yok","Astral-Touched","Starblood","Void-Astral","Celestial Astral","Primordial Astral"]
+};
+const DEFAULT_SUBRACES=["Yok","Asil Soy","Kraliyet Soyu","İlahi Soy","Demonik Soy","Ejderha Soyu","Titan Soyu","Void Soyu","Abyssal Soy","Celestial Soy","Primordial Soy","Mutasyona Uğramış","Kozmik Soy"];
+
+const NAME_POOLS={
+ male:["Alden","Kael","Lucian","Darius","Riven","Theron","Alaric","Cassian","Draven","Elias","Orion","Valen","Silas","Ronan","Cedric","Magnus","Leander","Evander","Zane","Kieran","Aeron","Damian","Ezran","Gideon","Lucius","Rowan","Atlas","Caelan","Nero","Veyron"],
+ female:["Aelira","Lyra","Selene","Seraphine","Elara","Aria","Evelyn","Nyx","Lunara","Celeste","Isolde","Aurora","Mira","Sylvia","Vespera","Astra","Elyra","Rhea","Naia","Calista","Amara","Liora","Eirwen","Nerissa","Velora","Iris","Althea","Seren","Elowen","Zaria"],
+ neutral:["Aeris","Riven","Sage","Nova","Aster","River","Ash","Vale","Sky","Echo","Rune","Sol","Winter","Ember","Onyx","Zen","Storm","Phoenix","Lux","Cinder","Wren","Halo","Dawn","Rain","Vesper","Ciel","Ari","Quinn","Rei","Zephyr"]
+};
+function genderKey(g){const x=String(g||'').toLowerCase();if(/erkek|male/.test(x))return'male';if(/kadın|female/.test(x))return'female';return'neutral';}
+function randomNameForGender(g){return pick(NAME_POOLS[genderKey(g)]);}
+function isGenericCharacterName(name){return /^(karakter|character)\s*\d+$/i.test(String(name||'').trim());}
+function generateAndAssignName(c,force=false){if(!c||c.nameCustom)return false;if(!force&&!isGenericCharacterName(c.name||'')&&!c.nameGenerated)return false;c.name=randomNameForGender(c.gender);c.nameGenerated=true;return true;}
+const categories=Object.keys(DATA);
+let current=categories[0],angle=0,spinning=false,slots=[],activeSlot=null,audioCtx=null,tickTimer=null,weaponAngle=0,weaponSpinning=false;
+let lockedCategories=(()=>{try{return JSON.parse(localStorage.getItem("wof_locks")||"{}")}catch(e){return {}}})();
+const canvas=document.getElementById("wheel"),ctx=canvas.getContext("2d"),TAU=Math.PI*2,cx=350,cy=350,R=320;
+const $=id=>document.getElementById(id),pick=a=>a[Math.floor(Math.random()*a.length)];
+
+const I18N={
+ tr:{menu:'☰ Menü',settings:'⚙️ Ayarlar',language:'🌐 Dil',theme:'🎨 Tema',dark:'🌌 Koyu',black:'⬛ Siyah',light:'⬜ Beyaz',red:'🟥 Kızıl',ocean:'🌊 Okyanus',forest:'🌲 Orman',purple:'🟪 Mor',info:'📚 Bilgi Arşivi',infoHint:'Irkları, yetenekleri, silahları ve diğer kader seçeneklerini detaylı incele.',infoSelectCategory:'Kategori seç',infoSelectItem:'Seçenek seç',version:'Infinite Character Generator • V2.1',fullGenerate:'⚡ TAM KARAKTER OLUŞTUR',lockTitle:'🔒 Çark Kilitleri',lockHint:'Kilitli kategoriler rastgele ve tam üretimde değişmez.',category:'Çark kategorisi',spin:'🎡 ÇARKI ÇEVİR',newSlot:'➕ YENİ KARAKTER SLOTU AÇ',random:'🎲 AKTİF SLOTA RASTGELE KARAKTER DOLDUR',slots:'👥 Karakter Slotları',card:'📜 Karakter Kartı',cardHint:'“Tam karakter oluştur” dediğinde sonuçlar burada toplanacak.',future:'🎲 Sonraki geliştirmeler',weak:'Güçsüz / kötü',mid:'Orta',strong:'Güçlü / iyi',ready:'Hazırsan kaderi çevir 😈',wheelHint:'Her turda farklı bir çark kullanabilirsin.',noSlots:'Henüz karakter slotu yok.',noSaved:'Henüz kayıtlı karakter yok.',newChar:'Yeni Karakter',spinToSlot:'Şimdi çevirdiğin her çark sonucu bu karaktere yazılacak.',resultsTo:'Çark sonuçları bu slota aktarılacak.',active:'aktif',character:'Karakter',noResult:'Henüz sonuç yok',deleteConfirm:'silinsin mi?',activeSlotHint:'Aktif slot: çarktan gelen her yeni sonuç buraya yazılır.',createFirst:'Önce Yeni Karakter’e bas.',board:'👥 Kayıtlı Karakterler Panosu',boardHint:'Kaydettiğin karakterlerini ve RPG istatistiklerini yıldız derecelendirmesiyle incele.',boardActivate:'Aktifleştir',compareTitle:'⚖️ Karakter Karşılaştırma',compareNeeded:'En az iki karakter gerekli.',compareAhead:'önde',compareTie:'🤝 Berabere!',compareScore:'Karşılaştırma skoru',arenaTitle:'⚔️ FateForge Arena',arenaHint:'Kaydettiğin iki karakteri seç ve yetenek, silah, savunma ve zayıflık etkileşimleri olan tur bazlı savaşı başlat.',fighterA:'🟥 Savaşçı A',fighterB:'🟦 Savaşçı B',arenaStart:'⚔️ SAVAŞI BAŞLAT',arenaNeedTwo:'Önce en az iki karakter oluştur.',arenaNeedDifferent:'İki farklı karakter seçmelisin.',arenaDone:'Savaş tamamlandı',round:'tur',roundLabel:'Tur',combatEngine:'Combat Engine',battleFull:'sınırına ulaşıldı. Kalan HP ve Combat Engine skoru sonucu belirledi.',wins:'KAZANDI!',normalAttack:'Normal saldırı',basic:'temel',weaknessHit:'ZAYIFLIK İSABETİ!',weaknessUsed:'zayıflığı sömürüldü.',timeBreak:'zamanı bükerek savunmayı aştı!',realityBreak:'gerçekliğin kurallarını zorladı!',speedAttack:'inanılmaz hızla saldırdı!',reflected:'hasarın bir kısmını yansıttı.',drained:'rakibinin gücünü emdi.',healed:'yenilendi',damage:'hasar',powerWord:'güç',overall:'Genel',average:'Ortalama',none:'Yok',rename:'İsmi Değiştir',exportCard:'📸 Karakter Kartını Dışa Aktar',sendArena:'⚔️ Arena’ya Gönder',activeSlot:'Aktif slot: çarktan gelen her yeni sonuç buraya yazılır.',noResult:'Henüz sonuç yok',specificWeaponTitle:'☠️ Belirli Silah Zayıflığı',specificWeaponHint:'Bu karakter yalnızca seçilen silaha karşı özel zayıflığa sahip.',specificWeaponSpin:'⚔️ HEDEF SİLAHI ÇEVİR',specificWeaponNone:'Henüz hedef silah belirlenmedi.',weaponProperties:'Silah Özellikleri',targetWeapon:'Hedef silah',critical:'kritik vuruş yaptı.',disrupted:'dengesini bozdu.',weaknessTarget:'Zayıflık hedefi',randomName:'🎲 Rastgele İsim',gender:'Cinsiyet',height:'Boy',visualTitle:'🎨 FateForge Görsel Üretici',visualHint:'Kayıtlı Karakter Kartının profilini temel alarak tam boy karakter görseli oluştur. API anahtarı sunucuda korunur.',visualCharacter:'Karakter',visualStyle:'Stil',visualRatio:'En Boy Oranı'},
+ en:{menu:'☰ Menu',settings:'⚙️ Settings',language:'🌐 Language',theme:'🎨 Theme',dark:'🌌 Dark',black:'⬛ Black',light:'⬜ White',red:'🟥 Crimson',ocean:'🌊 Ocean',forest:'🌲 Forest',purple:'🟪 Purple',info:'📚 Codex',infoHint:'Explore detailed information about races, abilities, weapons and other fate options.',infoSelectCategory:'Select a category',infoSelectItem:'Select an option',version:'Infinite Character Generator • V2.1',fullGenerate:'⚡ FULL CHARACTER GENERATE',lockTitle:'🔒 Wheel Locks',lockHint:'Locked categories stay unchanged during random and full generation.',category:'Wheel category',spin:'🎡 SPIN THE WHEEL',newSlot:'➕ CREATE NEW CHARACTER SLOT',random:'🎲 RANDOMIZE ACTIVE CHARACTER',slots:'👥 Character Slots',card:'📜 Character Card',cardHint:'Results will collect here when you create a full character.',future:'🎲 Upcoming improvements',weak:'Weak / bad',mid:'Medium',strong:'Strong / good',ready:'Ready? Spin the fate 😈',wheelHint:'Use a different wheel each turn.',noSlots:'No character slots yet.',noSaved:'No saved characters yet.',newChar:'New Character',spinToSlot:'Every wheel result you spin will be assigned to this character.',resultsTo:'Wheel results will be assigned to this slot.',active:'active',character:'Character',noResult:'No result yet',deleteConfirm:'delete?',activeSlotHint:'Active slot: every new wheel result is written here.',createFirst:'Press New Character first.',board:'👥 Saved Character Board',boardHint:'View saved characters and RPG stats with star ratings.',boardActivate:'Activate',compareTitle:'⚖️ Character Comparison',compareNeeded:'At least two characters are required.',compareAhead:'is ahead',compareTie:'🤝 Tie!',compareScore:'Comparison score',arenaTitle:'⚔️ FateForge Arena',arenaHint:'Choose two saved characters and start a turn-based battle with ability, weapon, defense and weakness interactions.',fighterA:'🟥 Fighter A',fighterB:'🟦 Fighter B',arenaStart:'⚔️ START BATTLE',arenaNeedTwo:'Create at least two characters first.',arenaNeedDifferent:'Choose two different characters.',arenaDone:'Battle complete',round:'rounds',roundLabel:'Round',combatEngine:'Combat Engine',battleFull:'limit reached. Remaining HP and Combat Engine score decided the result.',wins:'WINS!',normalAttack:'Normal attack',basic:'basic',weaknessHit:'WEAKNESS HIT!',weaknessUsed:'weakness was exploited.',timeBreak:'bent time and bypassed the defense!',realityBreak:'forced the rules of reality!',speedAttack:'attacked with incredible speed!',reflected:'reflected part of the damage.',drained:'drained some of the opponent’s power.',healed:'regenerated',damage:'damage',powerWord:'power',overall:'Overall',average:'Average',none:'None',rename:'Rename',exportCard:'📸 Export Character Card',sendArena:'⚔️ Send to Arena',activeSlot:'Active slot: every new wheel result is written here.',noResult:'No result yet',specificWeaponTitle:'☠️ Specific Weapon Weakness',specificWeaponHint:'This character has a special weakness against the selected weapon.',specificWeaponSpin:'⚔️ SPIN TARGET WEAPON',specificWeaponNone:'No target weapon selected yet.',weaponProperties:'Weapon Properties',targetWeapon:'Target weapon',critical:'landed a critical hit.',disrupted:'disrupted',weaknessTarget:'Weakness target',randomName:'🎲 Random Name',gender:'Gender',height:'Height',visualTitle:'🎨 FateForge Visual Generator',visualHint:'Create a full-body character visual from the exact saved Character Card profile. The API key stays server-side.',visualCharacter:'Character',visualStyle:'Style',visualRatio:'Aspect Ratio'}
+};
+const CAT_EN={'🧬 Irk':'🧬 Race','🧬 Sub-Race':'🧬 Sub-Race','⚡ Yetenek':'⚡ Ability','⚡ İkincil Yetenek':'⚡ Secondary Ability','🎂 Yaş':'🎂 Age','⚧️ Cinsiyet':'⚧️ Gender','📏 Boy':'📏 Height','💪 Güç Seviyesi':'💪 Power Level','📈 Potansiyel':'📈 Potential','🧠 IQ':'🧠 IQ','🧠 Kişilik':'🧠 Personality','⚔️ Silah':'⚔️ Weapon','🛡️ Savunma':'🛡️ Defense','☠️ Zayıflık':'☠️ Weakness','👑 Statü':'👑 Status','🎭 Kader':'🎭 Fate','🍀 Talih':'🍀 Luck'};
+let LANG=localStorage.getItem('wof_lang')||'tr';
+const t=k=>I18N[LANG][k]||I18N.tr[k]||k;
+const WORD_EN={
+"İnsan":"Human","Elf":"Elf","Karanlık":"Dark","Cüce":"Dwarf","Ork":"Orc","Goblin":"Goblin","Ogre":"Ogre","Troll":"Troll","Halfling":"Halfling","Gnome":"Gnome","Vampir":"Vampire","Dhampir":"Dhampir","Lycan":"Lycan","Lich":"Lich","Skeleton":"Skeleton","Ghoul":"Ghoul","Demon":"Demon","Devil":"Devil","Imp":"Imp","Angel":"Angel","Seraph":"Seraph","Fallen":"Fallen","Ejderha":"Dragon","Wyvern":"Wyvern","Phoenix":"Phoenix","Beastkin":"Beastkin","Catfolk":"Catfolk","Wolfkin":"Wolfkin","Kitsune":"Kitsune","Slime":"Slime","Elemental":"Elemental","Fairy":"Fairy","Dryad":"Dryad","Treant":"Treant","Merfolk":"Merfolk","Naga":"Naga","Golem":"Golem","Construct":"Construct","Giant":"Giant","Titan":"Titan","Celestial":"Celestial","Abyssborn":"Abyssborn","Voidborn":"Voidborn","Eldritch":"Eldritch","Spirit":"Spirit","Dullahan":"Dullahan","Revenant":"Revenant","Starborn":"Starborn","Feyborn":"Feyborn","Astral Human":"Astral Human","Erkek":"Male","Kadın":"Female","Non-binary":"Non-binary","140 cm":"140 cm","145 cm":"145 cm","150 cm":"150 cm","155 cm":"155 cm","160 cm":"160 cm","165 cm":"165 cm","170 cm":"170 cm","175 cm":"175 cm","180 cm":"180 cm","185 cm":"185 cm","190 cm":"190 cm","195 cm":"195 cm","200 cm":"200 cm","205 cm":"205 cm","210 cm":"210 cm","215 cm":"215 cm","220 cm":"220 cm",
+"Ateş":"Fire","Su":"Water","Buz":"Ice","Yıldırım":"Lightning","Rüzgâr":"Wind","Toprak":"Earth","Metal":"Metal","Bitki":"Plant","Gölge":"Shadow","Işık":"Light","Yerçekimi":"Gravity","Uzay":"Space","Zaman":"Time","Ruh":"Soul","Mana":"Mana","Kan":"Blood","Enerji":"Energy","Ses":"Sound","Titreşim":"Vibration","Canavar":"Beast","Element":"Element","Şifa":"Healing","Yaşam":"Life","Kemik":"Bone","Zehir":"Poison","Asit":"Acid","Kristal":"Crystal","Manyetizma":"Magnetism","Plazma":"Plasma","Uçuş":"Flight","Süper":"Super","Hız":"Speed","Duyu":"Sense","Ejderha Nefesi":"Dragon Breath","Kaos":"Chaos","Kozmik":"Cosmic","Astral":"Astral","Rüya":"Dream","Kabus":"Nightmare","Hafıza":"Memory","Bilgi":"Knowledge","Gelecek":"Future","Geçmiş":"Past","Rün":"Rune","Karanlık Büyü":"Dark Magic","Kutsal Büyü":"Holy Magic","Element Büyüsü":"Elemental Magic","Simya":"Alchemy","Silah":"Weapon","Ustalığı":"Mastery","Okçuluk":"Archery","Suikast":"Assassination","Şans":"Luck","Korku":"Fear","Büyü":"Magic","Hasar":"Damage","Adaptasyon":"Adaptation","Evrim":"Evolution","Parçalanma":"Disintegration","Yeniden Yapılanma":"Reconstruction","Mühür":"Seal","Alan":"Area","Boyut":"Dimension","Yıldız":"Star","Güneş":"Sun","Ay":"Moon","Formu":"Form","Dev":"Giant","Miniaturizasyon":"Miniaturization","Mükemmel":"Perfect","Stratejik":"Strategic","Öngörü":"Foresight","İlahi":"Divine","Lanet":"Curse","Kader":"Fate","Kesme":"Cutting","Gerçeklik":"Reality","Nedensellik":"Causality","Varlık":"Existence","Silme":"Erasure","Kavramsal":"Conceptual","Sonsuz":"Infinite","Mutlak":"Absolute","Karanlık Madde":"Dark Matter","Anti-Madde":"Antimatter","Kütle":"Mass","Yoğunluk":"Density","Isı":"Heat","Soğukluk":"Cold","Elektrik":"Electricity","Radyasyon":"Radiation","Nükleer":"Nuclear","Frekans":"Frequency","Prizma":"Prism","Portal":"Portal","Cep Evren":"Pocket Universe","Geçiş":"Travel","Durdurma":"Stopping","Atlama":"Jumping","Döngüsü":"Loop","Hırsızlığı":"Stealing","Yaratma":"Creation","Diriltme":"Resurrection","Bedenleştirme":"Materialization","Bağlama":"Binding","Zinciri":"Chain","Ele Geçirme":"Possession","Kanat":"Wings","Ekstrem":"Extreme","Hücre":"Cell","Organ":"Organ","Biyolojik":"Biological","Parazit":"Parasite","Simbiyoz":"Symbiosis","Mimikri":"Mimicry","Atom":"Atom","Molekül":"Molecule","Dönüşümü":"Conversion","Sıfırlama":"Reset","Güç":"Power","Uyandırma":"Awakening","Kuralsızlaştırma":"Rule Breaking","Emir":"Command","Varoluş":"Existence","Boyutlararası":"Interdimensional","Bilinç":"Consciousness","Omnipresence":"Omnipresence","Omnipotence":"Omnipotence","Düzen":"Order","Entropy":"Entropy","Hiçlik":"Nothingness","Yok Oluş":"Destruction",
+"Aşırı Aptal":"Extremely Stupid","Aptal":"Stupid","Düşük Zekâ":"Low Intelligence","Ortalama Altı":"Below Average","Sınırda Ortalama":"Borderline Average","Düşük Ortalama":"Low Average","Ortalama":"Average","Yüksek Ortalama":"High Average","Zeki":"Intelligent","Çok Zeki":"Very Intelligent","Üstün Zekâ":"Superior Intelligence","Dâhi":"Genius","Büyük Dâhi":"Great Genius","Olağanüstü Dâhi":"Extraordinary Genius","Süper Dâhi":"Super Genius","İnsanüstü Zekâ":"Superhuman Intelligence","Deha Ötesi":"Beyond Genius","Kozmik Zekâ":"Cosmic Intelligence","Gezegensel Dâhi":"Planetary Genius","Yıldız Dâhisi":"Stellar Genius","Galaktik Dâhi":"Galactic Genius","Galaksilerarası Zihin":"Intergalactic Mind","Evrensel Zekâ":"Universal Intelligence","Çoklu Evren Zekâsı":"Multiversal Intelligence","Omniversal Dâhi":"Omniversal Genius","Gerçeklik Dâhisi":"Reality Genius","Kavramsal Zihin":"Conceptual Mind","Her Şeyi Kavrayan":"All-Comprehending","Her Şeyi Bilen":"All-Knowing","Mutlak Bilinç":"Absolute Consciousness","Karanlık Elf":"Dark Elf","Fallen Angel":"Fallen Angel","Ejderha Kanı":"Dragon Blood","Büyücü Soyu":"Mage Bloodline","Büyücü Çırağı":"Apprentice Mage","Kutsanmış Alt Irk":"Blessed Sub-Race","Kozmik İnsan":"Cosmic Human","Void Dokunuşlu İnsan":"Void-Touched Human","Kadim İnsan":"Ancient Human","Asil İnsan":"Noble Human","Kraliyet Kanı":"Royal Blood","Kral/Kraliçe":"King/Queen","İmparator/İmparatoriçe":"Emperor/Empress","Dük/Düşes":"Duke/Duchess","Yarı Tanrı":"Demigod","Tanrı Adayı":"God Candidate","Yüce Tanrı":"Supreme God","Kadim Tanrı":"Ancient God","Tanrı Katili Olacak":"Will Become a God Slayer","Tanrı Olacak":"Will Become a God","Tarikat Üyesi":"Cult Member","Tarikat Ustası":"Cult Master","Dünya Hakimi":"World Ruler","Galaksi Hükümdarı":"Galaxy Ruler","Gezegen Hükümdarı":"Planetary Ruler","Gerçeklik Hükümdarı":"Reality Ruler","Kozmik Hükümdar":"Cosmic Ruler","Çoklu Evren Hükümdarı":"Multiverse Ruler","İmparatorluk Hükümdarı":"Empire Ruler","Yıldız Lordu":"Star Lord","Ölüler Kralı":"King of the Dead","Canavar Kralı":"Beast King","Savaş Kahramanı":"War Hero","Sıradan Biri":"Ordinary Person","Köylü":"Peasant","Muhafız":"Guard","Avcı":"Hunter","Paralı Asker":"Mercenary","Tüccar":"Merchant","Şövalye":"Knight","Büyücü":"Mage","Başbüyücü":"Archmage","Suikastçı":"Assassin","Usta Suikastçı":"Master Assassin","Teğmen":"Lieutenant","Yüzbaşı":"Captain","Binbaşı":"Major","Çiftçi":"Farmer","Maceraçı":"Adventurer","Açgözlü":"Greedy","Acımasız":"Ruthless","Takıntılı":"Obsessive","Çılgın":"Crazy","Aşırı Ciddi":"Extremely Serious","Aşırı Meraklı":"Extremely Curious","Soğukkanlı":"Cold-Blooded","Manipülatif":"Manipulative","Şakacı":"Joker","Asil":"Noble","Kraliyet":"Royal","Kadim":"Ancient","İlahi":"Divine","Kutsal":"Holy","Kutsanmış":"Blessed","Ejderha":"Dragon","Demonik":"Demonic","Soy":"Bloodline","Kan":"Blood","Beden":"Body","Zırhı":"Armor","Üretimi":"Generation","Oluşturma":"Creation","Kontrolü":"Control","Alanı":"Field","Kesici":"Cutter","Saldırıları":"Attacks","Tükenmesi":"Exhaustion","Görüsü":"Sight","Algısı":"Perception","Bükme":"Bending","Yeniden Yazımı":"Rewriting","Mühürlü":"Sealed","Yazılmamış":"Unwritten","Hapsolmuş":"Trapped","Tarafından":"By","Biraz Şanslı":"Slightly Lucky","Şanssız":"Unlucky","Şanslı":"Lucky","İlahi Şans":"Divine Luck","Kötü":"Bad","Çok Kötü":"Very Unlucky","Lanetli":"Cursed" ,"Çakıl Taşı":"Pebble","Kaya":"Rock","Duvar":"Wall","Oda":"Room","Ev":"House","Bina":"Building","Kule":"Tower","Küçük Köy":"Small Village","Büyük Köy":"Large Village","Kasaba":"Town","Küçük Şehir":"Small City","Şehir":"City","Büyük Şehir":"Large City","Metropol":"Metropolis","Dağ":"Mountain","Büyük Dağ":"Large Mountain","Ada":"Island","Ülke":"Country","Büyük Ülke":"Large Country","Kıta":"Continent","Büyük Kıta":"Large Continent","Gezegen":"Planet","Büyük Gezegen":"Large Planet","Yıldız Sistemi":"Star System","Galaksi":"Galaxy","Galaksi Kümesi":"Galaxy Cluster","Evren":"Universe","Çoklu Evren":"Multiverse","Sonsuz Kozmos":"Infinite Cosmos","Kozmik Sonsuzluk":"Cosmic Infinity","Sonsuz Ötesi":"Beyond Infinity",
+"Yok":"None","Asil":"Noble","Kraliyet":"Royal","Soyu":"Bloodline","Kanı":"Bloodline","Kadim":"Ancient","Primordial":"Primordial","Mutasyona Uğramış":"Mutated","Lanetli":"Cursed","Kutsanmış":"Blessed","Hibrit":"Hybrid","Parazit Soy":"Parasitic Bloodline","Yıldız Doğumlu":"Starborn",
+"Soğukkanlı":"Cold-Blooded","Normal Beden":"Normal Body","Canavar Kralı":"Beast King","Dünyayı Yok Edecek":"Will Destroy the World","Çok Kötü":"Very Unlucky","Kadim (101-500)":"Ancient (101-500)","Çocuk (5-12)":"Child (5-12)","Ergen (13-17)":"Teen (13-17)","Genç (18-25)":"Young (18-25)","Yetişkin (26-40)":"Adult (26-40)","Olgun (41-60)":"Mature (41-60)","Yaşlı (61-100)":"Elderly (61-100)","Antik (501-1.000)":"Antique (501-1,000)","Efsanevi (1.001-10.000)":"Legendary (1,001-10,000)","Kadim Varlık (10.001-100.000)":"Ancient Being (10,001-100,000)","Kozmik Çağ (100.001+)":"Cosmic Age (100,001+)",
+"Yok":"None"
+};
+const WORD_EN_EXTRA={
+ "🧬 Irk":"🧬 Race","🧬 Sub-Race":"🧬 Sub-Race","⚡ Yetenek":"⚡ Ability","⚡ İkincil Yetenek":"⚡ Secondary Ability","🎂 Yaş":"🎂 Age","💪 Güç Seviyesi":"💪 Power Level","📈 Potansiyel":"📈 Potential","🧠 Kişilik":"🧠 Personality","⚔️ Silah":"⚔️ Weapon","🛡️ Savunma":"🛡️ Defense","☠️ Zayıflık":"☠️ Weakness","👑 Statü":"👑 Status","🎭 Kader":"🎭 Fate","🍀 Talih":"🍀 Luck",
+ "Dragonkin":"Dragonkin","Kadim Soy":"Ancient Bloodline","Asil Soy":"Noble Bloodline","Kraliyet Soyu":"Royal Bloodline","İlahi Soy":"Divine Bloodline","Demonik Soy":"Demonic Bloodline","Ejderha Soyu":"Dragon Bloodline","Titan Soyu":"Titan Bloodline","Void Soyu":"Void Bloodline","Abyssal Soy":"Abyssal Bloodline","Celestial Soy":"Celestial Bloodline","Primordial Soy":"Primordial Bloodline","Lanetli Alt Irk":"Cursed Sub-Race","Hibrit Alt Irk":"Hybrid Sub-Race","Elemental Alt Irk":"Elemental Sub-Race","Astral Alt Irk":"Astral Sub-Race","Kozmik Alt Irk":"Cosmic Sub-Race",
+ "Manipülasyon":"Manipulation","Manipülasyonu":"Manipulation","Üretimi":"Generation","Üretme":"Generation","Patlaması":"Blast","Emilimi":"Absorption","Değiştirme":"Transformation","Kontrolü":"Control","Üretimi":"Generation","Çağırma":"Summoning","Çağırma":"Summoning","Kopyalama":"Copying","Mühürleme":"Sealing","Lanetleme":"Cursing","Arındırma":"Purification","Tükenmesi":"Exhaustion","Büyüsü":"Magic","Ustalığı":"Mastery","Aurası":"Aura","Bozma":"Breaking","Yansıtma":"Reflection","Kırma":"Breaking","Kırılması":"Refraction","Kesme":"Cutting","Kesici":"Cutter","Yok Etme":"Destruction","Yok Oluş":"Destruction","Yaratma":"Creation","Yenileme":"Renewal","Bedenleştirme":"Materialization","Bağlama":"Binding","Zinciri":"Chain","Ele Geçirme":"Possession","Oluşturma":"Creation","Dönüşümü":"Conversion","Sıfırlama":"Reset","Uyandırma":"Awakening","Yeniden Yazımı":"Rewriting","Mühürlü":"Sealed","Yazılmamış":"Unwritten","Hapsolmuş":"Trapped","Algısı":"Perception","Görüsü":"Sight","Öngörü":"Foresight","Bükme":"Bending","Bölünme":"Division","Durdurma":"Stopping","Atlama":"Jumping","Döngüsü":"Loop","Hırsızlığı":"Stealing","Alanı":"Field","Geçiş":"Travel","Formu":"Form","Zırhı":"Armor","Beden":"Body","Hücre":"Cell","Hücreler":"Cells","Organ":"Organ","Evrim":"Evolution","Uğramış":"Mutated","Soy":"Bloodline","Kanı":"Bloodline",
+ "Kısa":"Short","Uzun":"Long","Büyük":"Great","Çift":"Double","İkiz":"Twin","İki Elli":"Two-Handed","Savaş":"Battle","Hançer":"Dagger","Kılıç":"Sword","Mızrak":"Spear","Balta":"Axe","Çekiç":"Hammer","Balyoz":"Maul","Pençe":"Claw","Kama":"Dagger","Yay":"Bow","Tatar Yayı":"Crossbow","Arbalet":"Crossbow","Asası":"Staff","Kitabı":"Tome","Zincirli":"Chained","Eldiveni":"Glove","Mistik":"Mystic","Mızraklı":"Spear-Linked","Kalkan":"Shield","Fırtınası":"Storm","Atış":"Throwing","Lazer":"Laser","Rünlü":"Runic","Lanetli":"Cursed","Kutsal":"Holy","Ejderha Yapımı":"Dragon-Forged","Titan Yapımı":"Titan-Forged","Gerçeklik Kesici":"Reality Cutter","Kader Silahı":"Fate Weapon","Nedensellik Silahı":"Causality Weapon","Boyut Yok Edici":"Dimensional Destroyer","Tanrı Katili Silah":"God-Slayer Weapon","Adsız Kozmik Eser":"Nameless Cosmic Artifact",
+ "Kalın Deri":"Thick Skin","Çelik Deri":"Steel Skin","Mana Bariyeri":"Mana Barrier","Element Bariyeri":"Elemental Barrier","Ruh Bariyeri":"Soul Barrier","Hızla Yenilenme":"Rapid Regeneration","Hasar Yansıtma":"Damage Reflection","Ölümsüz Beden":"Immortal Body","İlahi Beden":"Divine Body","Ejderha Beden":"Dragon Body","Void Beden":"Void Body",
+ "Kutsal Enerji":"Holy Energy","Karanlık Enerji":"Dark Energy","Ruh Saldırıları":"Soul Attacks","Mana Tükenmesi":"Mana Exhaustion","Fiziksel Hasar":"Physical Damage","Zihin Saldırıları":"Mind Attacks","Yaşlanma":"Aging","Belirli Bir Element":"A Specific Element","Belirli Bir Silah":"A Specific Weapon","Kendi Gücünü Fazla Kullanmak":"Overusing One's Own Power","Kader Tarafından Mühürlenmiş":"Sealed by Fate",
+ "Dilenci":"Beggar","Zanaatkâr":"Craftsman","Asker":"Soldier","General":"General","Komutan":"Commander","Paladin":"Paladin","Soylu":"Noble","Prens/Prenses":"Prince/Princess","Veliaht":"Heir","Tarikat Lideri":"Cult Leader","Kutsal Şampiyon":"Holy Champion","Ejderha Lordu":"Dragon Lord","Demon Lordu":"Demon Lord","Kıta Hükümdarı":"Continent Ruler","Tanrı":"God","Kozmik Varlık":"Cosmic Being","Primordial Varlık":"Primordial Being","Kavramsal Varlık":"Conceptual Being","Kadim Varlık":"Ancient Being","Adsız Varlık":"Nameless Being",
+ "Sıradan Hayat":"Ordinary Life","Kahraman":"Hero","Kötü Adam":"Villain","Anti-Kahraman":"Anti-Hero","Seçilmiş Kişi":"Chosen One","Kayıp Prens":"Lost Prince","Kayıp Tanrı":"Lost God","Dünyayı Kurtaracak":"Will Save the World","Kaderin Hatası":"Mistake of Fate","Sonsuz Döngüye Hapsolmuş":"Trapped in an Infinite Loop","Gücünün %90'ı Mühürlü":"90% of Power Sealed","Henüz Kaderi Yazılmamış":"Fate Not Yet Written",
+ "Normal":"Normal","Çok Şanslı":"Very Lucky","-100 Lanetli":"-100 Cursed","-75 Çok Kötü":"-75 Very Unlucky","-50 Kötü":"-50 Unlucky","-25 Şanssız":"-25 Unlucky","0 Normal":"0 Normal","25 Biraz Şanslı":"25 Slightly Lucky","50 Şanslı":"50 Lucky","75 Çok Şanslı":"75 Very Lucky","100 İlahi Şans":"100 Divine Luck",
+ "Sıradağ":"Mountain Range","Büyük Ada":"Large Island","Uydu":"Satellite","Gaz Devi":"Gas Giant","Cüce Yıldız":"Dwarf Star","Büyük Yıldız":"Giant Star","Nebula":"Nebula","Güneş Sistemi Kümesi":"Solar System Cluster","Büyük Galaksi":"Large Galaxy","Süper Küme":"Supercluster","Gözlemlenebilir Evren":"Observable Universe","Büyük Evren":"Greater Universe","Omniverse":"Omniverse",
+ "Nazik":"Kind","Kibirli":"Arrogant","Kaotik":"Chaotic","Cesur":"Brave","Korkak":"Cowardly","Sessiz":"Quiet","Geveze":"Talkative","Onurlu":"Honorable","Merhametli":"Compassionate","Fedakâr":"Self-Sacrificing","Tembel":"Lazy","Disiplinli":"Disciplined","Saf":"Innocent","Paranoyak":"Paranoid","Umursamaz":"Carefree",
+ "Ölümsüzlük":"Immortality","İllüzyon":"Illusion","Yavaşlatma":"Slowing","Portal Açma":"Open Portal","Ömür Çalma":"Lifespan Stealing","Omnipotence Parçası":"Piece of Omnipotence","Yaratım Yeteneği":"Creation Ability","Tüfek":"Rifle"
+};
+Object.assign(WORD_EN,WORD_EN_EXTRA);
+function valueLabel(v){
+ if(LANG!=='en'||v==null)return v;
+ if(WORD_EN[v])return WORD_EN[v];
+ let x=String(v);
+ const phrases=Object.keys(WORD_EN).filter(k=>k.length>1).sort((a,b)=>b.length-a.length);
+ for(const k of phrases){if(x.includes(k))x=x.split(k).join(WORD_EN[k]);}
+ const suffixes=[['Manipülasyonu','Manipulation'],['Manipülasyon','Manipulation'],['Yansıtma','Reflection'],['Emilimi','Absorption'],['Üretimi','Generation'],['Kontrolü','Control'],['Oluşturma','Creation'],['Manipulationu','Manipulation']];
+ for(const [a,b] of suffixes) x=x.replaceAll(a,b);
+ return x;
+}
+function catLabel(k){if(LANG!=='en')return k;return CAT_EN[k]||CAT_EN[String(k).replace(/^\S+\s+/,'')]||WORD_EN[k]||k;}
+function toggleMenu(){$('menu').classList.toggle('open')}
+function setLanguage(lang){LANG=lang;localStorage.setItem('wof_lang',lang);applyLanguage();}
+function applyLanguage(){
+ $('visualTitle').textContent=t('visualTitle');$('visualHint').textContent=t('visualHint');$('visualCharacterLabel').textContent=t('visualCharacter');$('visualStyleLabel').textContent=t('visualStyle');$('visualRatioLabel').textContent=t('visualRatio');
+ document.documentElement.lang=LANG==='en'?'en':'tr';
+ document.documentElement.lang=LANG;
+ ['menuBtn','menuTitle','languageTitle','themeTitle','themeDark','themeBlack','themeLight','themeRed','themeOcean','themeForest','themePurple','infoBtn'].forEach(id=>{const el=$(id);if(el){const map={menuBtn:'menu',menuTitle:'settings',languageTitle:'language',themeTitle:'theme',themeDark:'dark',themeBlack:'black',themeLight:'light',themeRed:'red',themeOcean:'ocean',themeForest:'forest',themePurple:'purple',infoBtn:'info'};el.textContent=t(map[id]);}});
+ $('boardBtn').textContent=t('board');$('boardTitle').textContent=t('board');$('boardHint').textContent=t('boardHint');$('infoTitle').textContent=t('info');$('infoHint').textContent=t('infoHint');$('versionText').textContent=t('version');
+ const catOpts=categories.map(k=>`<option value="${escapeHtml(k)}">${escapeHtml(catLabel(k))}</option>`).join('');$('category').innerHTML=catOpts;$('categoryDock').innerHTML=catOpts;$('category').value=categories.includes(current)?current:categories[0];$('categoryDock').value=$('category').value;current=$('category').value;
+ $('categoryLabel').textContent=t('category');$('categoryDockLabel').textContent=t('category');$('spin').textContent=t('spin');$('newSlotBtn').textContent=t('newSlot');$('randomBtn').textContent=t('random');$('slotsTitle').textContent=t('slots');$('fullGenerateBtn').textContent=t('fullGenerate');$('lockTitle').textContent=t('lockTitle');$('lockHint').textContent=t('lockHint');$('cardTitle').textContent=t('card');$('cardHint').textContent=t('cardHint');$('futureTitle').textContent=t('future');$('legendWeak').textContent=t('weak');$('legendMid').textContent=t('mid');$('legendStrong').textContent=t('strong');
+ $('compareTitle').textContent=t('compareTitle');$('badgeFull').textContent=LANG==='en'?'Full Generate':'Tam Üretim';$('badgeLock').textContent=LANG==='en'?'Wheel Lock':'Çark Kilidi';$('badgeExport').textContent=LANG==='en'?'Character Card Export':'Karakter Kartı Dışa Aktar';$('badgeRarity').textContent=LANG==='en'?'Rarity':'Nadirlik';$('badgeAbsurd').textContent=LANG==='en'?'Absurdity Score':'Absürtlük Skoru';$('badgeCompare').textContent=LANG==='en'?'Character Compare':'Karakter Karşılaştırma';$('badgeCombat').textContent=LANG==='en'?'Combat Engine':'Savaş Motoru';$('arenaTitle').textContent=t('arenaTitle');$('arenaHint').textContent=t('arenaHint');$('fighterALabel').textContent=t('fighterA');$('fighterBLabel').textContent=t('fighterB');$('arenaStart').textContent=t('arenaStart');
+ $('langTR').classList.toggle('active',LANG==='tr');$('langEN').classList.toggle('active',LANG==='en');
+ renderSlots();renderActiveCard();renderBoard();updateArenaSelectors();renderComparisonSelectors();drawWheel();updateInfoCategories();renderLockGrid();renderArenaPreview();renderWeaknessWeaponPanel();updateVisualSelectors(activeSlot);
+ if(!spinning && (activeSlot===null || !slots.length))$('wheelTitle').textContent=t('ready');
+}
+
+const THEME_KEYS=['dark','black','light','red','ocean','forest','purple'];
+function setTheme(theme){
+ if(!THEME_KEYS.includes(theme))theme='dark';
+ document.body.classList.remove(...THEME_KEYS.map(x=>'theme-'+x));
+ document.body.classList.add('theme-'+theme);
+ localStorage.setItem('wof_theme',theme);
+ document.querySelectorAll('.themeBtn').forEach(b=>b.classList.toggle('active',b.dataset.theme===theme));
+}
+function loadTheme(){setTheme(localStorage.getItem('wof_theme')||'dark')}
+
+function toggleBoard(){
+ const p=$('boardPanel');p.classList.toggle('open');
+ if(p.classList.contains('open')){renderBoard();p.scrollIntoView({behavior:'smooth',block:'start'});}
+}
+function renderBoard(){
+ const el=$('boardList'); if(!el)return;
+ if(!slots.length){el.innerHTML='<div class="hint">'+escapeHtml(t('noSaved'))+'</div>';return;}
+ el.innerHTML=slots.map((c,i)=>{
+   ensureRpgStats(c);
+   const avg=(["str","dex","vit","int","wis","luk"].reduce((a,k)=>a+Number(c[k]||0),0)/6);
+   return `<div class="board-card">
+    <div class="board-head"><h3 style="margin:0">#${i+1} — ${escapeHtml(c.name||('Character '+(i+1)))}</h3>
+      <button class="secondary" onclick="selectSlot(${i});toggleBoard()">▶ ${t('boardActivate')}</button></div>
+    <div class="board-meta">${valueLabel(c.race||'—')} ${c.sub?'• '+valueLabel(c.sub):''}</div><div>${rarityBadge(c)}<span class="rarityBadge">🧪 Absurdity ${absurdityScore(c)}/100</span></div>
+    <div class="rpg-stats">
+      ${[["STR","str"],["DEX","dex"],["VIT","vit"],["INT","int"],["WIS","wis"],["LUK","luk"]].map(([a,k])=>`<div class="rpg-stat"><b>📊 ${a}</b>${ratingHTML(c[k])}</div>`).join("")}
+    </div>
+    <div class="board-meta" style="margin-top:10px">${t('average')} ${ratingHTML(avg)}</div>
+   </div>`;
+ }).join('');
+ saveSlots();
+}
+
+function toggleInfo(){
+ const p=$('infoPanel');p.classList.toggle('open');
+ if(p.classList.contains('open')){updateInfoCategories();p.scrollIntoView({behavior:'smooth',block:'start'});}
+}
+function updateInfoCategories(){
+ const sel=$('infoCategory');if(!sel)return;
+ const old=sel.value||current;
+ sel.innerHTML=categories.map(k=>`<option value="${k}">${catLabel(k)}</option>`).join('');
+ sel.value=categories.includes(old)?old:categories[0];
+ updateInfoItems();
+}
+function updateInfoItems(){
+ const cat=$('infoCategory').value;const arr=cat==='🧬 Sub-Race'?getSubraces():DATA[cat];
+ const sel=$('infoItem');const old=sel.value;
+ sel.innerHTML=arr.map(v=>`<option value="${String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">${valueLabel(v)}</option>`).join('');
+ if(arr.includes(old))sel.value=old;
+ renderInfo();
+}
+function genericInfo(category,item){
+ const en=LANG==='en';
+ const name=valueLabel(item);
+ if(category==='🧬 Irk'){
+  const special={
+   'İnsan':en?'Humans are adaptable generalists with balanced physical and mental potential. They have no fixed supernatural specialty, which makes them excellent for hybrid builds.':'İnsanlar dengeli fiziksel ve zihinsel potansiyele sahip, uyumlu genelcilerdir. Sabit bir doğaüstü uzmanlıkları olmadığı için hibrit yapılar için çok uygundurlar.',
+   'Ejderha':en?'Dragons are ancient apex beings known for immense bodies, elemental power, flight and extraordinary longevity.':'Ejderhalar devasa bedenleri, element güçleri, uçuş yetenekleri ve olağanüstü uzun ömürleriyle bilinen kadim zirve varlıklardır.',
+   'Goblin':en?'Goblins are small, opportunistic survivors. Their greatest advantages are numbers, cunning, adaptation and rapid growth under the right conditions.':'Goblinler küçük, fırsatçı hayatta kalanlardır. En büyük avantajları sayı üstünlüğü, kurnazlık, adaptasyon ve doğru koşullarda hızlı gelişimleridir.',
+   'Skeleton':en?'Skeletons are undead bodies stripped to bone. They are resistant to many biological threats and can function without ordinary organs.':'İskeletler kemiğe indirgenmiş ölümsüz bedenlerdir. Birçok biyolojik tehdide dayanıklıdırlar ve normal organlara ihtiyaç duymadan işlev görebilirler.'};
+  if(special[item])return special[item];
+  return en?`${name} is a race with its own physiology, natural talents and limitations. Its sub-races can significantly change how the character develops.`:`${name}, kendine özgü fizyolojisi, doğal yetenekleri ve sınırları bulunan bir ırktır. Alt ırk seçimi karakterin gelişimini ciddi biçimde değiştirebilir.`;
+ }
+
+ if(category==='🧠 IQ'){
+  const iqMap={
+   'Aşırı Aptal (40–60 IQ)':['Çok sınırlı problem çözme ve soyut düşünme kapasitesi. Karmaşık planlar yerine içgüdüsel veya basit davranışlar baskındır.','Very limited problem-solving and abstract reasoning. Instinctive or simple behavior tends to dominate.'],
+   'Ortalama (100 IQ)':['Genel insan nüfusuna göre ortalama bilişsel kapasite. Günlük öğrenme, problem çözme ve planlama için dengeli bir düzeydir.','Average cognitive ability relative to the general human population; balanced for learning, problem-solving and planning.'],
+   'Zeki (110–119 IQ)':['Yeni bilgileri hızlı kavrayabilen, mantık kurma ve problem çözmede ortalamanın üzerinde performans gösterebilen bir zihin.','A mind capable of learning quickly and performing above average in reasoning and problem-solving.'],
+   'Dâhi (140–149 IQ)':['Soyut düşünme, örüntü tanıma ve karmaşık problemlerde olağanüstü kapasite. Stratejik yeteneklerle birleştiğinde çok tehlikeli olabilir.','Exceptional abstract reasoning, pattern recognition and complex problem-solving capacity.'],
+   'Süper Dâhi (170–179 IQ)':['Normal insan zekâsının çok ötesinde analiz, strateji ve kavrayış. Çok katmanlı sistemleri kısa sürede çözümleyebilir.','Far beyond normal human intelligence in analysis, strategy and comprehension.'],
+   'Evrensel Zekâ (251–260 IQ)':['Birden fazla uygarlığın, bilimin veya kozmik sistemin işleyişini aynı anda kavrayabilecek düzeyde olağanüstü bilişsel kapasite.','A level of cognition capable of comprehending multiple civilizations, sciences or cosmic systems simultaneously.'],
+   'Her Şeyi Bilen (300 IQ)':['Bilgiye erişim ve kavrayış neredeyse sınırsızdır. Bilmek ile anlamak arasındaki fark karakter için anlamsızlaşmaya başlar.','Knowledge and comprehension are effectively limitless. For this character, the distinction between knowing and understanding begins to disappear.'],
+   'Mutlak Bilinç (300+ IQ)':['Zekânın ölçülebilir bir katsayı olmaktan çıktığı, varoluşun tamamını kavrayabilen aşkın bir bilinç seviyesi.','A transcendent state where intelligence is no longer meaningfully measurable and the whole of existence can be comprehended.']
+  };
+  if(iqMap[item]){const z=iqMap[item];return en?z[1]:z[0];}
+  return en?`${name} represents an extreme point on the character's cognitive scale. IQ is a narrative abstraction here, not a clinical measurement.`:`${name}, karakterin bilişsel ölçeğindeki bir seviyeyi temsil eder. Buradaki IQ klinik bir ölçüm değil, hikâyesel bir soyutlamadır.`;
+ }
+ if(category==='🧬 Sub-Race') return en?`${name} is a specialized lineage that modifies the base race. It may alter physiology, affinities, resistances, appearance or growth potential.`:`${name}, temel ırkı değiştiren uzmanlaşmış bir soydur. Fizyolojiyi, yatkınlıkları, dirençleri, görünümü veya gelişim potansiyelini değiştirebilir.`;
+ if(category==='⚡ Yetenek'||category==='⚡ İkincil Yetenek'){
+  const templates=[
+   [/Manipülasyonu|Manipulation/i,en?'Allows the user to control, shape or alter the named force or substance. Mastery determines range, precision and scale.':'Adı geçen güç veya maddeyi kontrol etmeyi, şekillendirmeyi ya da değiştirmeyi sağlar. Ustalık menzil, hassasiyet ve ölçeği belirler.'],
+   [/Görüsü|Görüsü|Algısı|Perception|Sight/i,en?'Enhances awareness beyond ordinary senses, allowing the character to detect information that would normally remain hidden.':'Normal duyuların ötesinde farkındalık sağlar; normalde gizli kalacak bilgilerin algılanmasına imkân verir.'],
+   [/Yaratma|Creation/i,en?'Creates the named phenomenon or object rather than merely controlling an existing source. The exact limits depend on the character’s power level.':'Var olan bir kaynağı kontrol etmekten ziyade belirtilen olguyu veya nesneyi yaratır. Sınırları karakterin güç seviyesine bağlıdır.'],
+   [/Silme|Erasure/i,en?'Removes the target from the relevant layer of reality. Stronger applications can bypass conventional durability.':'Hedefi gerçekliğin ilgili katmanından kaldırır. Daha güçlü kullanımları geleneksel dayanıklılığı aşabilir.'],
+   [/Kesme|Cutting/i,en?'Cuts through targets according to the ability’s rules. Advanced forms may ignore conventional armor, distance or physical structure.':'Yeteneğin kurallarına göre hedefleri keser. İleri kullanımlar geleneksel zırhı, mesafeyi veya fiziksel yapıyı yok sayabilir.'],
+   [/Şans|Luck/i,en?'Manipulates probability, making unlikely outcomes more or less likely. It can influence combat, accidents and coincidence.':'Olasılıkları değiştirerek düşük ihtimalli sonuçları daha olası veya daha az olası hâle getirir. Savaşları, kazaları ve tesadüfleri etkileyebilir.']
+  ];
+  for(const [re,txt] of templates)if(re.test(item))return txt;
+  return en?`${name} is a supernatural ability. Its practical value depends on control, range, resource cost, resistance and the user’s power level.`:`${name}, doğaüstü bir yetenektir. Pratik değeri kontrol, menzil, kaynak maliyeti, dirençler ve kullanıcının güç seviyesine bağlıdır.`;
+ }
+ if(category==='⚔️ Silah')return en?`${name} is a weapon option that defines the character’s main equipment. Its combat value depends on durability, reach, special effects, compatibility with the wielder and the character’s power level.`:`${name}, karakterin ana ekipmanını belirleyen bir silah seçeneğidir. Savaş değeri dayanıklılık, menzil, özel etkiler, kullanıcıyla uyum ve karakterin güç seviyesine bağlıdır.`;
+ if(category==='💪 Güç Seviyesi')return en?`${name} describes the approximate maximum scale of force the character can meaningfully affect or survive. It is a narrative scale, not a strict scientific measurement.`:`${name}, karakterin anlamlı biçimde etkileyebileceği veya dayanabileceği yaklaşık maksimum güç ölçeğini belirtir. Bu bilimsel bir ölçüm değil, anlatı amaçlı bir güç skalasıdır.`;
+ if(category==='📈 Potansiyel')return en?`${name} represents growth potential rather than current strength. A low-tier character with extraordinary potential can eventually surpass a stronger character.`:`${name}, mevcut gücü değil gelişme potansiyelini temsil eder. Düşük seviyeli ama olağanüstü potansiyelli bir karakter ileride daha güçlü bir karakteri geçebilir.`;
+ if(category==='🧠 Kişilik')return en?`${name} is the character’s dominant personality tendency. It influences decisions, reactions, relationships and how their abilities are likely to be used.`:`${name}, karakterin baskın kişilik eğilimidir. Kararlarını, tepkilerini, ilişkilerini ve yeteneklerini nasıl kullanacağını etkiler.`;
+ if(category==='🛡️ Savunma')return en?`${name} describes the character’s primary defensive method or natural protection.`:`${name}, karakterin temel savunma yöntemini veya doğal korumasını açıklar.`;
+ if(category==='☠️ Zayıflık')return en?`${name} is a vulnerability that opponents can exploit. A weakness does not necessarily make the character weak; it gives the build a specific counter.`:`${name}, rakiplerin kullanabileceği bir zayıf noktadır. Zayıflık karakteri genel olarak güçsüz yapmaz; build'e belirli bir karşılık noktası verir.`;
+ if(category==='👑 Statü')return en?`${name} describes the character’s social, military, political or supernatural position in the world.`:`${name}, karakterin dünyadaki sosyal, askerî, siyasi veya doğaüstü konumunu belirtir.`;
+ if(category==='🎭 Kader')return en?`${name} is the major narrative direction attached to the character. It is a fate hook, not a guaranteed prediction unless the story treats it that way.`:`${name}, karaktere bağlanan ana hikâyesel yönelimdir. Hikâye bunu kesin kader olarak ele almadıkça mutlak kehanet değildir.`;
+ if(category==='🍀 Talih')return en?`${name} represents how strongly coincidence tends to favor or punish the character.`:`${name}, tesadüflerin karakteri ne ölçüde destekleme veya cezalandırma eğiliminde olduğunu temsil eder.`;
+ if(category==='🎂 Yaş')return en?`${name} defines the character’s age bracket and can be used as a lore constraint or source of experience.`:`${name}, karakterin yaş aralığını belirler ve hikâyede deneyim veya yaşam süresi açısından kullanılabilir.`;
+ return en?`${name} is one of the available FateForge options.`:`${name}, FateForge içindeki seçeneklerden biridir.`;
+}
+function renderInfo(){
+ const cat=$('infoCategory')?.value,item=$('infoItem')?.value;if(!cat||item==null)return;
+ $('infoItemTitle').textContent=valueLabel(item);$('infoDescription').textContent=genericInfo(cat,item);
+ const arr=cat==='🧬 Sub-Race'?getSubraces():DATA[cat];
+ $('infoMeta').textContent=LANG==='en'?`${catLabel(cat)} • ${arr.length} options in this category`:`${catLabel(cat)} • Bu kategoride ${arr.length} seçenek var`;
+}
+
+function setup(){
+ const opts=categories.map(k=>`<option value="${k}">${catLabel(k)}</option>`).join("");
+ $("category").innerHTML=opts;
+ $("categoryDock").innerHTML=opts;
+ $("category").value=current;
+ $("categoryDock").value=current;
+ loadSlots();
+ if(current==="🧬 Sub-Race") syncCategory(current);
+ drawWheel(); renderSlots(); renderBoard(); updateArenaSelectors(); renderWeaknessWeaponPanel();
+}
+function drawWheel(){
+ current=$("category").value;
+  const arr=current==="🧬 Sub-Race"?getSubraces():DATA[current],n=arr.length,step=TAU/n;
+ ctx.clearRect(0,0,700,700);ctx.save();ctx.translate(cx,cy);ctx.rotate(angle);
+ for(let i=0;i<n;i++){
+  ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,R,i*step,(i+1)*step);ctx.closePath();
+  const strength=n<=1?1:i/(n-1);
+    const light=52-20*strength;
+    const sat=4+86*strength;
+    ctx.fillStyle=`hsl(0, ${sat}%, ${light}%)`;
+    ctx.fill();ctx.strokeStyle="#15151b";ctx.lineWidth=2;ctx.stroke();
+  // Show labels on ALL wheels. For crowded wheels use compact alternating labels.
+  ctx.save();ctx.rotate(i*step+step/2);ctx.textAlign="right";ctx.fillStyle="#fff";
+  const text=arr[i], translated=valueLabel(text), label=translated.length>18?translated.slice(0,16)+"…":translated;
+  ctx.shadowColor="#ffffff";ctx.shadowBlur=5;ctx.font=`900 ${n>35?10:12}px system-ui`;
+  ctx.fillText(label,R-10,4);ctx.shadowBlur=0;ctx.restore();
+ }
+ ctx.beginPath();ctx.arc(0,0,48,0,TAU);ctx.fillStyle="#101016";ctx.fill();ctx.strokeStyle="#eee";ctx.lineWidth=4;ctx.stroke();
+ ctx.fillStyle="#fff";ctx.textAlign="center";ctx.font="bold 23px system-ui";ctx.fillText("FATE",0,8);ctx.restore();
+  const centerValue=$("wheelTitle").dataset.center||"FATE";
+  centerText(valueLabel(centerValue));
+}
+
+function soundStart(){try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==="suspended")audioCtx.resume()}catch(e){}}
+function beep(freq=700,d=.045){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type="square";o.frequency.value=freq;g.gain.setValueAtTime(.035,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+d);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+d)}
+function startTicks(){clearInterval(tickTimer);let ms=65;tickTimer=setInterval(()=>{beep(520+Math.random()*220,.035);ms=Math.min(210,ms+8)},ms)}
+function stopTicks(){clearInterval(tickTimer);tickTimer=null;beep(1050,.11);setTimeout(()=>beep(1450,.15),90)}
+
+
+function getSubraces(){
+  const race=activeSlot!==null ? slots[activeSlot].race : null;
+  return SUBRACE_BY_RACE[race] || DEFAULT_SUBRACES;
+}
+function syncCategory(value){
+  if(!categories.includes(value)) value=categories[0];
+  current=value;
+  const a=$("category"),b=$("categoryDock");
+  if(a) a.value=value;
+  if(b) b.value=value;
+  drawWheel();
+}
+function updateCategoryOptions(){
+  // Sub-race is tied to the active character's race.
+  if(current==="🧬 Sub-Race") drawWheel();
+}
+function centerText(text, color="#fff"){
+  ctx.save();ctx.translate(cx,cy);ctx.beginPath();ctx.arc(0,0,76,0,TAU);
+  ctx.fillStyle="#0e0e14f2";ctx.fill();ctx.strokeStyle="#eee";ctx.lineWidth=4;ctx.stroke();
+  ctx.fillStyle=color;ctx.shadowColor="#fff";ctx.shadowBlur=12;ctx.textAlign="center";ctx.textBaseline="middle";
+  const words=String(text).split(" ");let lines=[],line="";
+  words.forEach(w=>{if((line+" "+w).trim().length>13){lines.push(line);line=w}else line=(line+" "+w).trim()});
+  if(line)lines.push(line);
+  const size=lines.length>3?14:lines.length>2?16:20;ctx.font=`900 ${size}px system-ui`;
+  const gap=size+3,top=-(lines.length-1)*gap/2;
+  lines.forEach((l,i)=>ctx.fillText(l,0,top+i*gap));ctx.shadowBlur=0;ctx.restore();
+}
+function spin(){
+ if(spinning)return;
+ if(activeSlot===null || !slots[activeSlot]){alert(LANG==='tr'?"Önce “Yeni Karakter” ile bir slot aç veya mevcut bir slota dokun.":"Create a new character slot or select an existing one first.");return}
+ const btn=$("spin");
+ soundStart();spinning=true;btn.disabled=true;
+ const arr=current==="🧬 Sub-Race"?getSubraces():DATA[current];
+ if(!arr||!arr.length){spinning=false;btn.disabled=false;return}
+ const n=arr.length,step=TAU/n,winner=Math.floor(Math.random()*n);
+ const pointer=-Math.PI/2,desired=pointer-(winner+.5)*step,currentNorm=((angle%TAU)+TAU)%TAU,desiredNorm=((desired%TAU)+TAU)%TAU;
+ const delta=((desiredNorm-currentNorm)+TAU)%TAU,startAngle=angle,end=angle+TAU*(7+Math.floor(Math.random()*3))+delta,dur=4300,t0=performance.now();
+ startTicks();
+ function finish(){
+   stopTicks();spinning=false;btn.disabled=false;
+ }
+ function frame(t){
+   try{
+    const p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,4);angle=startAngle+(end-startAngle)*e;
+    const liveIndex=Math.floor(((((-angle-Math.PI/2)%TAU)+TAU)%TAU)/step)%n;
+    $("wheelTitle").dataset.center=arr[liveIndex];drawWheel();
+    if(p<1){requestAnimationFrame(frame);return;}
+    angle=end;drawWheel();const val=arr[winner];
+    assignToSlot(current,val);$("wheelTitle").textContent=`🎯 ${valueLabel(val)}`;$("wheelTitle").dataset.center=val;
+    $("wheelHint").textContent=`${catLabel(current)} → ${t("character")} #${activeSlot+1}`;
+    saveSlots();
+   }catch(err){console.error("Wheel spin error:",err);$("wheelHint").textContent=LANG==='tr'?"Çark tekrar hazır. 😈":"The wheel is ready again. 😈";}
+   finally{finish();}
+ }
+ requestAnimationFrame(frame);
+}
+
+function isSpecificWeaponWeakness(c){return String(c?.weakness||'')==='Belirli Bir Silah';}
+function weaponMeta(name){
+ const x=String(name||'').toLowerCase();
+ const m={damage:1,crit:0,pierce:0,control:0,range:0,holy:false,exotic:false,defenseBreak:0};
+ if(/tahta kılıç/.test(x))m.damage=.82;
+ if(/katana|rapier|ikiz bıçak|çift kılıç|atış bıçakları/.test(x))m.crit=.10;
+ if(/balta|çekiç|balyoz|mızrak|trident|glaive|halberd|çift elli balta|savaş baltası|savaş çekici/.test(x)){m.damage*=1.12;m.defenseBreak=.08;}
+ if(/yay|uzun yay|kısa yay|tatar yayı|arbalet|tabanca|tüfek|atış bıçakları/.test(x)){m.range=1;m.damage*=1.06;}
+ if(/zincirli|kusari-gama|mızraklı zincir|whip/.test(x))m.control=.12;
+ if(/kalkan/.test(x)){m.damage=.7;m.control=.05;}
+ if(/kutsal|ilahi/.test(x)){m.holy=true;m.damage*=1.08;}
+ if(/lanetli|abyss|void|kozmik|primordial|kavramsal|gerçeklik|kader|nedensellik|tanrı katili/.test(x)){m.exotic=true;m.damage*=1.12;m.defenseBreak+=.08;}
+ if(/gerçeklik kesici|kader silahı|nedensellik silahı|boyut yok edici|tanrı katili|adsız kozmik/.test(x)){m.defenseBreak+=.12;m.pierce+=.08;}
+ return m;
+}
+function weaponPropertyLabels(name){
+ const m=weaponMeta(name),out=[];
+ if(m.damage<.9)out.push(LANG==='en'?'Low damage':'Düşük hasar');
+ else if(m.damage>1.12)out.push(LANG==='en'?'High damage':'Yüksek hasar');
+ else if(m.damage>1.04)out.push(LANG==='en'?'Damage boost':'Hasar bonusu');
+ if(m.crit)out.push(LANG==='en'?'Critical chance':'Kritik şansı');
+ if(m.pierce)out.push(LANG==='en'?'Armor piercing':'Zırh delme');
+ if(m.control)out.push(LANG==='en'?'Control':'Kontrol');
+ if(m.range)out.push(LANG==='en'?'Ranged':'Menzilli');
+ if(m.holy)out.push(LANG==='en'?'Holy':'Kutsal');
+ if(m.exotic)out.push(LANG==='en'?'Exotic':'Egzotik');
+ if(m.defenseBreak)out.push(LANG==='en'?'Defense break':'Savunma kırma');
+ return out;
+}
+function drawWeaponWheel(){
+ const c=$('weaponWheel'),wctx=c?.getContext('2d');if(!c||!wctx)return;const arr=DATA['⚔️ Silah'],n=arr.length,step=TAU/n,Rw=230,cxw=260,cyw=260;
+ wctx.clearRect(0,0,520,520);wctx.save();wctx.translate(cxw,cyw);wctx.rotate(weaponAngle);
+ for(let i=0;i<n;i++){wctx.beginPath();wctx.moveTo(0,0);wctx.arc(0,0,Rw,i*step,(i+1)*step);wctx.closePath();const strength=i/(n-1);wctx.fillStyle=`hsl(210, ${18+70*strength}%, ${50-18*strength}%)`;wctx.fill();wctx.strokeStyle='#15151b';wctx.lineWidth=1.5;wctx.stroke();wctx.save();wctx.rotate(i*step+step/2);wctx.textAlign='right';wctx.fillStyle='#fff';wctx.font=`900 ${n>55?7:9}px system-ui`;const txt=valueLabel(arr[i]),label=txt.length>14?txt.slice(0,12)+'…':txt;wctx.fillText(label,Rw-7,3);wctx.restore();}
+ wctx.beginPath();wctx.arc(0,0,38,0,TAU);wctx.fillStyle='#101016';wctx.fill();wctx.strokeStyle='#eee';wctx.lineWidth=3;wctx.stroke();wctx.fillStyle='#fff';wctx.textAlign='center';wctx.font='900 13px system-ui';wctx.fillText('WEAPON',0,4);wctx.restore();
+}
+function renderWeaknessWeaponPanel(){
+ const panel=$('weaponWeaknessPanel');if(!panel)return;const c=activeSlot===null?null:slots[activeSlot];const open=!!c&&isSpecificWeaponWeakness(c);panel.classList.toggle('open',open);if(!open)return;
+ $('specificWeaponTitle').textContent=t('specificWeaponTitle');$('specificWeaponHint').textContent=t('specificWeaponHint');$('weaponWeaknessSpin').textContent=t('specificWeaponSpin');drawWeaponWheel();
+ const target=c.weaknessWeapon;$('weaponTarget').textContent=target?`${t('targetWeapon')}: ${valueLabel(target)}`:t('specificWeaponNone');
+ $('weaponProps').innerHTML=target?weaponPropertyLabels(target).map(x=>`<span class="weaponProp">${escapeHtml(x)}</span>`).join(''):'';
+}
+function setRandomWeaknessWeapon(c){if(!c||!isSpecificWeaponWeakness(c))return;c.weaknessWeapon=pick(DATA['⚔️ Silah']);}
+function spinWeaknessWeapon(){
+ if(weaponSpinning||activeSlot===null||!slots[activeSlot]||!isSpecificWeaponWeakness(slots[activeSlot]))return;
+ const btn=$('weaponWeaknessSpin');weaponSpinning=true;if(btn)btn.disabled=true;soundStart();const arr=DATA['⚔️ Silah'],n=arr.length,step=TAU/n,winner=Math.floor(Math.random()*n),pointer=-Math.PI/2,desired=pointer-(winner+.5)*step,currentNorm=((weaponAngle%TAU)+TAU)%TAU,desiredNorm=((desired%TAU)+TAU)%TAU,delta=((desiredNorm-currentNorm)+TAU)%TAU,start=weaponAngle,end=start+TAU*(5+Math.floor(Math.random()*3))+delta,dur=3000,t0=performance.now();
+ function frame(t){const p=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-p,4);weaponAngle=start+(end-start)*e;drawWeaponWheel();if(p<1){requestAnimationFrame(frame);return;}weaponAngle=end;drawWeaponWheel();const val=arr[winner];slots[activeSlot].weaknessWeapon=val;saveSlots();weaponSpinning=false;if(btn)btn.disabled=false;renderWeaknessWeaponPanel();renderActiveCard();renderArenaPreview();}
+ requestAnimationFrame(frame);
+}
+
+function saveLocks(){localStorage.setItem("wof_locks",JSON.stringify(lockedCategories));}
+function isLocked(cat){return !!lockedCategories[cat];}
+function toggleLock(cat){if(lockedCategories[cat])delete lockedCategories[cat];else lockedCategories[cat]=true;saveLocks();renderLockGrid();}
+function renderLockGrid(){const el=$("lockGrid");if(!el)return;el.innerHTML=categories.map(cat=>`<button class="lockBtn ${isLocked(cat)?'locked':''}" onclick="toggleLock(${JSON.stringify(cat)})">${isLocked(cat)?'🔒':'🔓'} ${escapeHtml(catLabel(cat))}</button>`).join('');}
+function fullGenerateCharacter(){
+ if(activeSlot===null)createSlot();
+ if(activeSlot===null)return;
+ const slot=slots[activeSlot];
+ Object.keys(DATA).forEach(k=>{if(k.startsWith('📊 ')||isLocked(k))return;assignToSlot(k,pick(k==='🧬 Sub-Race'?getSubraces():DATA[k]));});
+ ['str','dex','vit','int','wis','luk'].forEach(k=>{if(!isLocked('📊 '+k.toUpperCase()))slot[k]=randomRpgStat();});
+ ensureCharacterIdentity(slot);saveSlots();refreshAllViews();
+ $("wheelTitle").textContent=LANG==='tr'?`⚡ ${slot.name} tamamen oluşturuldu!`:`⚡ ${slot.name} fully generated!`;
+}
+function refreshAllViews(){renderSlots();renderActiveCard();renderBoard();updateArenaSelectors();renderComparisonSelectors();renderLockGrid();updateInfoCategories();renderWeaknessWeaponPanel();renderArenaPreview();updateVisualSelectors(activeSlot);if(current==='🧬 Sub-Race')drawWheel();}
+function ensureCharacterIdentity(c){if(!c.id)c.id=Date.now().toString(36)+Math.random().toString(36).slice(2,7);if(!c.name)c.name='Character';if(c.nameCustom==null)c.nameCustom=!isGenericCharacterName(c.name);if(isSpecificWeaponWeakness(c)&&!c.weaknessWeapon)setRandomWeaknessWeapon(c);if(!isSpecificWeaponWeakness(c))delete c.weaknessWeapon;if(c.gender&&!c.nameCustom&&(!c.name||isGenericCharacterName(c.name)))generateAndAssignName(c);ensureRpgStats(c);}
+function rarityInfo(c){
+ const stat=statScore(c)/10,p=powerRank(c)/Math.max(1,DATA['💪 Güç Seviyesi'].length-1),pot=Math.max(0,DATA['📈 Potansiyel'].indexOf(c.potential))/Math.max(1,DATA['📈 Potansiyel'].length-1),iq=Math.max(0,DATA['🧠 IQ'].indexOf(c.iq))/Math.max(1,DATA['🧠 IQ'].length-1);
+ const score=(p*.42+pot*.18+iq*.12+stat*.28)*100;const tiers=[['Common',0],['Uncommon',18],['Rare',32],['Epic',46],['Legendary',60],['Mythic',72],['Cosmic',82],['Transcendent',92],['Absolute',98]];let r='Common';for(const [n,m] of tiers)if(score>=m)r=n;return{name:r,score:Math.round(score)};
+}
+function rarityBadge(c){const r=rarityInfo(c);return `<span class="rarityBadge rarity-${r.name}">🏆 ${r.name} • ${r.score}</span>`;}
+function absurdityScore(c){
+ let score=5,p=powerRank(c),avg=statScore(c),iq=DATA['🧠 IQ'].indexOf(c.iq),pot=DATA['📈 Potansiyel'].indexOf(c.potential);
+ if(p>=25)score+=18;if(p>=35)score+=15;if(iq>=0&&iq<=1&&p>=15)score+=22;if(avg<=3&&p>=15)score+=15;
+ if((c.power||'').includes('Omnipotence')||(c.power||'').includes('Gerçeklik')||(c.power||'').includes('Reality'))score+=10;if(String(c.tier||'').includes('Sonsuz')||String(c.tier||'').includes('Infinity'))score+=10;if(pot===0&&p>=10)score+=8;if(Number(c.luk||0)>=9&&p<10)score+=8;
+ const seed=[c.race,c.sub,c.power,c.secondPower,c.weapon,c.status,c.fate,c.personality].filter(Boolean).join('|');let h=0;for(let i=0;i<seed.length;i++)h=(h*31+seed.charCodeAt(i))%997;return Math.min(100,Math.round(score+(h%13)));
+}
+function compareScore(c){return statScore(c)*10+powerRank(c)*1.7+Math.max(0,DATA['📈 Potansiyel'].indexOf(c.potential))*2+Math.max(0,DATA['🧠 IQ'].indexOf(c.iq))*.8;}
+function renderComparisonSelectors(){const a=$("compareA"),b=$("compareB");if(!a||!b)return;const oa=a.value,ob=b.value,opts=slots.map((c,i)=>`<option value="${i}">#${i+1} — ${escapeHtml(c.name||('Character '+(i+1)))}</option>`).join('');if(!slots.length){a.innerHTML='<option value="">—</option>';b.innerHTML='<option value="">—</option>';renderComparison();return;}a.innerHTML=opts;b.innerHTML=opts;a.value=slots[oa]?oa:'0';b.value=slots[ob]&&String(ob)!==String(a.value)?ob:(slots.length>1?'1':'0');if(a.value===b.value&&slots.length>1)b.value=String((Number(a.value)+1)%slots.length);renderComparison();}
+function renderComparison(){const el=$('compareResult');if(!el)return;if(slots.length<2){el.innerHTML=`<div class="hint">${escapeHtml(t('compareNeeded'))}</div>`;return;}const a=slots[Number($('compareA')?.value||0)],b=slots[Number($('compareB')?.value||1)];if(!a||!b)return;ensureCharacterIdentity(a);ensureCharacterIdentity(b);const sa=compareScore(a),sb=compareScore(b),fields=[['STR','str'],['DEX','dex'],['VIT','vit'],['INT','int'],['WIS','wis'],['LUK','luk']];const fighter=(c,score)=>`<div class="compareFighter"><h3 style="margin:0 0 7px">${escapeHtml(c.name)}</h3>${rarityBadge(c)}<span class="rarityBadge">🧪 Absurdity ${absurdityScore(c)}/100</span><div class="miniStat"><span>${escapeHtml(t('overall'))}</span><b>${score.toFixed(1)}</b></div>${fields.map(([n,k])=>`<div class="miniStat"><span>${n}</span><b>${Number(c[k]||0).toFixed(1)}</b></div><div class="compareBar"><div class="compareFill" style="width:${Math.max(0,Math.min(100,Number(c[k]||0)*10))}%"></div></div>`).join('')}</div>`;const winner=sa===sb?t('compareTie'):sa>sb?`🏆 ${escapeHtml(a.name)} ${t('compareAhead')}`:`🏆 ${escapeHtml(b.name)} ${t('compareAhead')}`;el.innerHTML=`<div class="compareGrid">${fighter(a,sa)}${fighter(b,sb)}</div><div class="winner" style="margin-top:10px">${winner}<br><small>${escapeHtml(t('compareScore'))}: ${sa.toFixed(1)} vs ${sb.toFixed(1)}</small></div>`;}
+
+function createSlot(){
+ const slot={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:"Karakter "+(slots.length+1),nameCustom:false,nameGenerated:false};
+ slots.push(slot);activeSlot=slots.length-1;saveSlots();renderSlots();renderActiveCard();updateArenaSelectors();
+ $("wheelTitle").textContent=LANG==='tr'?`✨ ${slot.name} açıldı`:`✨ ${slot.name} created`;$("wheelHint").textContent=t('spinToSlot');
+}
+
+function renameSlot(i){
+  const currentName=slots[i].name||`Karakter ${i+1}`;
+  const name=prompt(LANG==='tr'?"Karakterin yeni adı:":"New character name:",currentName);
+  if(name===null)return;
+  const clean=name.trim();
+  if(!clean)return;
+  slots[i].name=clean;slots[i].nameCustom=true;slots[i].nameGenerated=false;saveSlots();refreshAllViews();
+}
+function deleteSlot(i){
+  if(!confirm(`“${slots[i].name}” ${t("deleteConfirm")}`))return;
+  slots.splice(i,1);
+  if(!slots.length)activeSlot=null;
+  else if(activeSlot===i)activeSlot=Math.min(i,slots.length-1);
+  else if(activeSlot>i)activeSlot--;
+  saveSlots();refreshAllViews();
+}
+function selectSlot(i){if(spinning)return;if(!slots[i])return;activeSlot=i;refreshAllViews();$("wheelTitle").textContent=`🎯 ${slots[i].name} aktif`;$("wheelHint").textContent=t('resultsTo')}
+function assignToSlot(category,value){
+ if(activeSlot===null)return;
+ const map={"🧬 Irk":"race","🧬 Sub-Race":"sub","⚡ Yetenek":"power","⚡ İkincil Yetenek":"secondPower","🎂 Yaş":"age","💪 Güç Seviyesi":"tier","📈 Potansiyel":"potential","📊 STR":"str","📊 DEX":"dex","📊 VIT":"vit","📊 INT":"int","📊 WIS":"wis","📊 LUK":"luk","🧠 IQ":"iq","🧠 Kişilik":"personality","⚔️ Silah":"weapon","🛡️ Savunma":"defense","☠️ Zayıflık":"weakness","👑 Statü":"status","🎭 Kader":"fate","🍀 Talih":"luck","⚧️ Cinsiyet":"gender","📏 Boy":"height"};
+ if(!map[category])return;
+ slots[activeSlot][map[category]]=value;
+ if(category==='⚧️ Cinsiyet'){generateAndAssignName(slots[activeSlot]);}
+ if(category==='☠️ Zayıflık'){if(String(value)==='Belirli Bir Silah'){setRandomWeaknessWeapon(slots[activeSlot]);}else{delete slots[activeSlot].weaknessWeapon;}}
+ renderSlots();renderActiveCard();renderWeaknessWeaponPanel();renderArenaPreview();
+}
+
+function randomRpgStat(){return Math.floor(Math.random()*20+1)/2;}
+function ratingHTML(value){
+ const v=Math.max(0,Math.min(10,Number(value)||0));
+ let s='<span class="rating" aria-label="'+v.toFixed(1)+' / 10">';
+ for(let i=1;i<=10;i++){
+   const fill=Math.max(0,Math.min(100,(v-(i-1))*100));
+   s+='<span class="star" style="--fill:'+fill+'%">★</span>';
+ }
+ return s+'</span>';
+}
+function ensureRpgStats(c){
+ ["str","dex","vit","int","wis","luk"].forEach(k=>{if(c[k]==null)c[k]=randomRpgStat();});
+}
+
+function generateCharacter(){
+ if(activeSlot===null)createSlot();
+ if(activeSlot===null)return;
+ const slot=slots[activeSlot];
+ Object.keys(DATA).forEach(k=>{if(k.startsWith("📊 ")||isLocked(k))return;assignToSlot(k,pick(k==="🧬 Sub-Race"?getSubraces():DATA[k]));});
+ ["str","dex","vit","int","wis","luk"].forEach(k=>{if(!isLocked("📊 "+k.toUpperCase()))slot[k]=randomRpgStat();});
+ ensureCharacterIdentity(slot);saveSlots();refreshAllViews();
+}
+function renderSlots(){
+ const esc=escapeHtml;
+ $("slots").innerHTML=slots.length?slots.map((s,i)=>`<div class="slotwrap"><button class="slot ${i===activeSlot?"active":""}" onclick="selectSlot(${i})">#${i+1} • ${esc(s.name||('Karakter '+(i+1)))}<small>${esc(s.race||"Henüz sonuç yok")} ${s.tier?"• "+esc(s.tier):""}${s.gender?" • "+esc(valueLabel(s.gender)):""}${s.height?" • "+esc(valueLabel(s.height)):""}</small></button><div class="slottools"><button onclick="renameSlot(${i})">✏️</button><button onclick="deleteSlot(${i})">🗑️</button></div></div>`).join(""):`<div class="hint">${t("noSlots")}</div>`;
+}
+function generateRandomName(i){const c=slots[i];if(!c)return;c.name=randomNameForGender(c.gender);c.nameGenerated=true;c.nameCustom=false;saveSlots();refreshAllViews();}
+function renderActiveCard(){
+ const c=activeSlot===null?null:slots[activeSlot];
+ if(!c){$('card').innerHTML=`<h2 style="margin-top:0">${escapeHtml(t('card'))}</h2><div class="hint">${escapeHtml(t('createFirst'))}</div>`;return;}
+ ensureCharacterIdentity(c);const r=rarityInfo(c),abs=absurdityScore(c);
+ const fields=[['🧬 Irk','race'],['🧬 Sub-Race','sub'],['⚡ Yetenek','power'],['⚡ İkincil Yetenek','secondPower'],['💪 Güç Seviyesi','tier'],['📈 Potansiyel','potential'],['🧠 IQ','iq'],['🧠 Kişilik','personality'],['⚔️ Silah','weapon'],['🛡️ Savunma','defense'],['☠️ Zayıflık','weakness'],...(isSpecificWeaponWeakness(c)&&c.weaknessWeapon?[[LANG==='en'?'🎯 Weakness Target':'🎯 Zayıflık Hedefi','weaknessWeapon']]:[]),['👑 Statü','status'],['🎭 Kader','fate'],['🍀 Talih','luck'],['🎂 Yaş','age'],['⚧️ Cinsiyet','gender'],['📏 Boy','height']];
+ $('card').innerHTML=`<div class="cardhead"><div><h2 style="margin:0">✨ #${activeSlot+1} — ${escapeHtml(c.name)}</h2><div>${rarityBadge(c)}<span class="rarityBadge">🧪 Absurdity ${abs}/100</span></div></div><div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end"><button class="secondary renamebig" onclick="generateRandomName(${activeSlot})">${escapeHtml(t('randomName'))}</button><button class="secondary renamebig" onclick="renameSlot(${activeSlot})">✏️ ${escapeHtml(t('rename'))}</button></div></div><div class="grid">${fields.map(([a,k])=>stat(LANG==='en'?catLabel(a):a,valueLabel(c[k]))).join('')}</div><div class="rpg-stats">${[['STR','str'],['DEX','dex'],['VIT','vit'],['INT','int'],['WIS','wis'],['LUK','luk']].map(([a,k])=>`<div class="rpg-stat"><b>📊 ${a}</b>${ratingHTML(c[k])}</div>`).join('')}</div><div class="cardActions"><button class="secondary" onclick="exportCharacterCard(${activeSlot})">${escapeHtml(t('exportCard'))}</button><button class="secondary" onclick="switchTab('arena');setTimeout(()=>selectArenaCharacter(${activeSlot}),0)">${escapeHtml(t('sendArena'))}</button></div><p class="hint">${escapeHtml(t('activeSlot'))}</p>`;
+ saveSlots();
+}
+function stat(a,b){return `<div class="stat"><b>${escapeHtml(a)}</b><span>${escapeHtml(valueLabel(b)||"—")}</span></div>`}
+
+
+function renderArenaPreview(){const el=$('arenaPreview');if(!el)return;if(slots.length<2){el.innerHTML=`<div class="emptyArena">${escapeHtml(t('arenaNeedTwo'))}</div>`;return;}const ai=Number($('arenaA').value||0),bi=Number($('arenaB').value||1),A=slots[ai],B=slots[bi];if(!A||!B){el.innerHTML='';return;}const mini=c=>`<h3>${escapeHtml(c.name||t('character'))}</h3><div class="mini">${escapeHtml(valueLabel(c.race||t('none')))} • ${escapeHtml(valueLabel(c.tier||'—'))}<br>⚧️ ${escapeHtml(valueLabel(c.gender||t('none')))} • 📏 ${escapeHtml(valueLabel(c.height||'—'))}<br>⚡ ${escapeHtml(valueLabel(c.power||'—'))}<br>⚡ ${escapeHtml(valueLabel(c.secondPower||'—'))}<br>⚔️ ${escapeHtml(valueLabel(c.weapon||t('none')))}${weaponPropertyLabels(c.weapon).length?`<br>🔹 ${escapeHtml(weaponPropertyLabels(c.weapon).join(' • '))}`:''}<br>🛡️ ${escapeHtml(valueLabel(c.defense||t('none')))}<br>☠️ ${escapeHtml(valueLabel(c.weakness||t('none')))}${isSpecificWeaponWeakness(c)&&c.weaknessWeapon?`<br>🎯 ${escapeHtml(t('targetWeapon'))}: ${escapeHtml(valueLabel(c.weaknessWeapon))}`:''}<br>🧠 ${escapeHtml(t('overall'))}: <b>${arenaPower(c).toFixed(1)}</b></div>`;el.innerHTML=`<div class="fighter">${mini(A)}</div><div class="vs">VS</div><div class="fighter">${mini(B)}</div>`;}
+function selectArenaCharacter(i){updateArenaSelectors();const a=$("arenaA"),b=$("arenaB");if(!a||!b)return;a.value=String(i);if(slots.length>1){const bi=(i+1)%slots.length;b.value=String(bi);}renderArenaPreview();}
+function exportCharacterCard(i){
+ const c=slots[i];if(!c)return;ensureCharacterIdentity(c);const fields=[[catLabel('🧬 Irk'),c.race],[catLabel('🧬 Sub-Race'),c.sub],[catLabel('⚡ Yetenek'),c.power],[catLabel('⚡ İkincil Yetenek'),c.secondPower],[catLabel('💪 Güç Seviyesi'),c.tier],[catLabel('📈 Potansiyel'),c.potential],[catLabel('🧠 IQ'),c.iq],[catLabel('🧠 Kişilik'),c.personality],[catLabel('⚔️ Silah'),c.weapon],[catLabel('🛡️ Savunma'),c.defense],[catLabel('☠️ Zayıflık'),c.weakness],...(isSpecificWeaponWeakness(c)&&c.weaknessWeapon?[[LANG==='en'?'🎯 Weakness Target':'🎯 Zayıflık Hedefi',c.weaknessWeapon]]:[]),[catLabel('👑 Statü'),c.status],[catLabel('🎭 Kader'),c.fate],[catLabel('🍀 Talih'),c.luck],[catLabel('🎂 Yaş'),c.age],[catLabel('⚧️ Cinsiyet'),c.gender],[catLabel('📏 Boy'),c.height]];const esc=x=>String(x??'—').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');const r=rarityInfo(c),abs=absurdityScore(c),stats=[["STR",c.str],["DEX",c.dex],["VIT",c.vit],["INT",c.int],["WIS",c.wis],["LUK",c.luk]];let y=145;let text='';for(const [k,v] of fields){text+=`<text x="55" y="${y}" class="label">${esc(k)}</text><text x="245" y="${y}" class="value">${esc(valueLabel(v||'—'))}</text>`;y+=28;}let sy=145;for(const [k,v] of stats){text+=`<text x="570" y="${sy}" class="label">${k}</text><text x="650" y="${sy}" class="value">${Number(v||0).toFixed(1)}/10</text>`;sy+=42;}const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1050" viewBox="0 0 900 1050"><rect width="900" height="1050" rx="36" fill="#111"/><rect x="20" y="20" width="860" height="1010" rx="28" fill="none" stroke="#777" stroke-width="2"/><text x="55" y="70" class="brand">⚒ FATEFORGE</text><text x="55" y="112" class="name">${esc(c.name)}</text><text x="55" y="142" class="badge">🏆 ${esc(r.name)} • ${r.score}   |   🧪 Absurdity ${abs}/100</text>${text}<text x="55" y="930" class="foot">FateForge • V2.1</text><style>.brand{font:900 26px sans-serif;fill:#aaa}.name{font:900 42px sans-serif;fill:#fff}.badge{font:800 18px sans-serif;fill:#ddd}.label{font:800 15px sans-serif;fill:#999}.value{font:700 18px sans-serif;fill:#fff}.foot{font:700 14px sans-serif;fill:#777}</style></svg>`;const blob=new Blob([svg],{type:'image/svg+xml'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(c.name||'character').replace(/[^a-z0-9çğıöşü _-]/gi,'_')+'_fateforge.svg';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+const VISUAL_API_URL='https://fateforge-visual-generator.darkinpatates.workers.dev/api/generate-character';
+
+function visualCharacterSummary(c){
+ const fields=[
+  ['🧬 Race',c.race],['🧬 Sub-Race',c.sub],['⚧️ Gender',c.gender],['📏 Height',c.height],['🎂 Age',c.age],
+  ['⚡ Ability',c.power],['⚡ Secondary Ability',c.secondPower],['💪 Power Level',c.tier],['📈 Potential',c.potential],['🧠 IQ',c.iq],
+  ['🎭 Personality',c.personality],['⚔️ Weapon',c.weapon],['🛡️ Defense',c.defense],['☠️ Weakness',c.weakness],['👑 Status',c.status],
+  ['🎭 Fate',c.fate],['🍀 Luck',c.luck],['🎯 Specific Weapon Weakness',c.weaknessWeapon]
+ ].filter(([,v])=>v&&String(v)!=='—');
+ return fields.map(([k,v])=>`<div><b>${escapeHtml(k)}:</b> ${escapeHtml(valueLabel(v))}</div>`).join('');
+}
+function buildVisualPrompt(c,style,ratio){
+ const profile=[
+  `Name: ${c.name||'Unnamed Character'}`,
+  `Gender: ${c.gender||'Unknown'}`,
+  `Height: ${c.height||'Unknown'}`,
+  `Age: ${c.age||'Unknown'}`,
+  `Race: ${c.race||'Unknown'}`,
+  `Sub-Race: ${c.sub||'Unknown'}`,
+  `Primary Ability: ${c.power||'None'}`,
+  `Secondary Ability: ${c.secondPower||'None'}`,
+  `Power Level: ${c.tier||'Unknown'}`,
+  `Potential: ${c.potential||'Unknown'}`,
+  `IQ: ${c.iq||'Unknown'}`,
+  `Personality: ${c.personality||'Unknown'}`,
+  `Weapon: ${c.weapon||'None'}`,
+  `Defense: ${c.defense||'Unknown'}`,
+  `Weakness: ${c.weakness||'Unknown'}`,
+  `Status: ${c.status||'Unknown'}`,
+  `Fate: ${c.fate||'Unknown'}`,
+  `Luck: ${c.luck||'Unknown'}`,
+  `Specific Weapon Weakness: ${c.weaknessWeapon||'None'}`
+ ].join('\n');
+ return `Create a polished full-body fantasy character illustration for FateForge. Treat the following Character Card profile as canon.\n\nCHARACTER PROFILE\n${profile}\n\nVISUAL DIRECTION\nStyle: ${style}. Aspect ratio: ${ratio}. Show exactly one character as the clear focal subject. Visually respect gender, approximate stated height through body proportions, age, race and sub-race anatomy. Make the weapon clearly visible and consistent with the profile. Translate abilities, power level, potential, personality, status, fate, defense and weakness into clothing, pose, aura, materials, scars, magical effects and environment without contradicting the profile. Keep the design coherent and visually readable. No UI, no character sheet, no stats, no labels, no captions, no logos, no watermark text, no multiple characters.`;
+}
+function updateVisualSelectors(preferred){
+ const sel=$('visualCharacter'); if(!sel)return;
+ const keep=preferred??activeSlot; sel.innerHTML=slots.map((c,i)=>`<option value="${i}">#${i+1} — ${escapeHtml(c.name||('Character '+(i+1)))}</option>`).join('');
+ if(slots.length) sel.value=String(Math.min(Math.max(Number(keep)||0,0),slots.length-1));
+ renderVisualPreview();
+}
+function renderVisualPreview(){
+ const out=$('visualPreview'),sel=$('visualCharacter'); if(!out||!sel)return;
+ if(!slots.length){out.innerHTML=`<div class="emptyArena">${escapeHtml(t('noSaved'))}</div>`;return;}
+ const c=slots[Number(sel.value)||0]; if(!c)return;
+ ensureCharacterIdentity(c);
+ out.innerHTML=`<h3 style="margin-top:0">✨ ${escapeHtml(c.name)}</h3><div class="hint" style="margin-bottom:8px">${escapeHtml(t('activeSlot'))}</div>${visualCharacterSummary(c)}`;
+}
+function renderVisualResultImage(data,mimeType,meta){
+ const result=$('visualResult');
+ const src=`data:${mimeType||'image/png'};base64,${data}`;
+ result.innerHTML=`<img src="${src}" alt="FateForge generated character"><div class="visualMeta">${escapeHtml(meta||'Generated by FateForge Visual Generator.')}</div>`;
+}
+async function generateVisualCharacter(){
+ const btn=$('visualGenerateBtn'),status=$('visualStatus'),sel=$('visualCharacter');
+ if(!slots.length){status.style.display='block';status.className='visualStatus err';status.textContent=t('noSaved');return;}
+ const c=slots[Number(sel?.value)||0]; if(!c)return;
+ ensureCharacterIdentity(c); saveSlots();
+ const style=$('visualStyle')?.value||'cinematic fantasy illustration';
+ const ratio=$('visualRatio')?.value||'2:3';
+ status.style.display='block';status.className='visualStatus busy';status.textContent=LANG==='en'?'Generating image…':'Görsel oluşturuluyor…';
+ btn.disabled=true;
+ try{
+  const res=await fetch(VISUAL_API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({character:c,style,aspectRatio:ratio})});
+  const raw=await res.text(); let data=null; try{data=JSON.parse(raw)}catch{}
+  if(!res.ok)throw new Error(data?.error||`HTTP ${res.status}`);
+  if(!data?.image)throw new Error(LANG==='en'?'The generator returned no image.':'Üretici görsel döndürmedi.');
+  renderVisualResultImage(data.image,data.mimeType,`${c.name} • ${style} • ${ratio}`);
+  status.className='visualStatus ok';status.textContent=LANG==='en'?'Image generated successfully.':'Görsel başarıyla oluşturuldu.';
+ }catch(err){
+  status.className='visualStatus err';const msg=err?.message||'Unknown error';status.textContent=(LANG==='en'?'Generation failed: ':'Görsel oluşturulamadı: ')+msg+(msg==='Failed to fetch'?' — Check the Cloudflare Worker URL/CORS setup.':'');
+ }finally{btn.disabled=false;}
+}
+
+function switchTab(tab){
+ document.querySelectorAll('.tabPanel').forEach(p=>p.classList.remove('active'));
+ const target=$('tab-'+tab); if(target)target.classList.add('active');
+ document.querySelectorAll('.navBtn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+ if(tab==='vault'){renderSlots();renderActiveCard();renderBoard();renderComparisonSelectors();}
+ if(tab==='generating'){updateVisualSelectors(activeSlot);}
+ if(tab==='arena'){updateArenaSelectors();renderArenaPreview();}
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+function updateArenaSelectors(){
+ const a=$('arenaA'),b=$('arenaB'); if(!a||!b)return;
+ const oldA=a.value,oldB=b.value;
+ const opts=slots.map((c,i)=>`<option value="${i}">#${i+1} — ${escapeHtml(c.name||('Character '+(i+1)))}</option>`).join('');
+ if(!slots.length){a.innerHTML='<option value="">—</option>';b.innerHTML='<option value="">—</option>';renderArenaPreview();return;}
+ a.innerHTML=opts;b.innerHTML=opts;
+ a.value=slots[oldA]?oldA:'0';
+ b.value=slots[oldB]&&String(oldB)!==String(a.value)?oldB:(slots.length>1?'1':'0');
+ if(a.value===b.value && slots.length>1)b.value=String((Number(a.value)+1)%slots.length);
+}
+function escapeHtml(x){return String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function statScore(c){return ['str','dex','vit','int','wis','luk'].reduce((n,k)=>n+Number(c[k]||0),0)/6}
+function powerRank(c){
+ const t=String(c.tier||'');
+ const idx=DATA['💪 Güç Seviyesi'].indexOf(t);
+ if(idx>=0)return idx;
+ const nums=t.match(/\d+/g);
+ return nums?Math.max(...nums.map(Number)):0;
+}
+function abilityTags(name){const x=String(name||'').toLowerCase();const tags=[];const add=(k)=>tags.push(k);if(/rejenerasyon|yenilen|şifa|yaşam|dirilt|immortal|ölümsüz/.test(x))add('heal');if(/zaman/.test(x))add('time');if(/teleport|uzay|boyut|portal|astral/.test(x))add('mobility');if(/bariyer|savunma|hasar emilim|mutlak savunma/.test(x))add('guard');if(/ruh|soul/.test(x))add('soul');if(/gölge|void|hiçlik|abyss/.test(x))add('void');if(/ateş|plazma|yıldırım|elektrik|ışık|buz|su|radyasyon|nükleer/.test(x))add('element');if(/güç çalma|enerji emilim|hız çalma|ömür çalma/.test(x))add('drain');if(/mühür|kader kesme|gerçeklik|nedensellik|kavramsal|omnipotence|omniscience|mutlak emir|kuralsızlaştırma/.test(x))add('hax');if(/zihin|korku|hafıza|rüya|kabus/.test(x))add('mind');if(/olasılık|şans/.test(x))add('luck');if(/kopya|klon/.test(x))add('clone');if(/yaratma|madde yaratma|yaşam yaratma|dirilt/.test(x))add('creation');if(/varlık silme|yok etme|yok oluş|parçalanma/.test(x))add('erase');if(/süper hız|hızlandırma|mutlak hız/.test(x))add('speed');if(/süper güç|saldırı güçlendirme/.test(x))add('power');return tags;}
+function weaponTags(name){const x=String(name||'').toLowerCase();const tags=[];if(/yay|arbalet|tatar|atış|tabanca|tüfek/.test(x))tags.push('ranged');if(/kılıç|katana|rapier|falchion|scimitar|glaive|halberd|tırpan|hançer|bıçak|kama/.test(x))tags.push('blade');if(/balta|çekiç|balyoz|mızrak|trident|glaive|halberd/.test(x))tags.push('heavy');if(/kutsal|ilahi/.test(x))tags.push('holy');if(/lanetli|abyss|void|kozmik|primordial|kavramsal|gerçeklik|kader|nedensellik|tanrı katili/.test(x))tags.push('exotic');return tags;}
+function defenseTags(name){const x=String(name||'').toLowerCase();return [/rejenerasyon|yenilen|ölümsüz/.test(x)&&'heal',/bariyer/.test(x)&&'barrier',/yansıtma/.test(x)&&'reflect',/emilim/.test(x)&&'absorb',/adaptasyon/.test(x)&&'adapt',/ilahi/.test(x)&&'divine',/ejderha/.test(x)&&'dragon',/void/.test(x)&&'void'].filter(Boolean);}
+function weaknessTag(name){const x=String(name||'').toLowerCase();if(x==='yok')return null;if(/ateş/.test(x))return'fire';if(/buz/.test(x))return'ice';if(/yıldırım/.test(x))return'lightning';if(/kutsal/.test(x))return'holy';if(/karanlık|void|abyss/.test(x))return'void';if(/zehir/.test(x))return'poison';if(/ruh/.test(x))return'soul';if(/mana/.test(x))return'mana';if(/fiziksel/.test(x))return'physical';if(/zihin/.test(x))return'mind';if(/silah/.test(x))return'weapon';return null;}
+function arenaPower(c){const stat=statScore(c),pr=powerRank(c),iq=Number(String(c.iq||'100').match(/\d+/)?.[0]||100),pot=Math.max(0,DATA['📈 Potansiyel'].indexOf(c.potential));const luck=Number(String(c.luck||'0').match(/-?\d+/)?.[0]||0);const abilities=abilityTags(c.power).concat(abilityTags(c.secondPower));let bonus=abilities.includes('hax')?18:0;bonus+=abilities.includes('time')?16:0;bonus+=abilities.includes('erase')?15:0;bonus+=abilities.includes('heal')?8:0;bonus+=abilities.includes('guard')?7:0;bonus+=abilities.includes('speed')?6:0;bonus+=weaponTags(c.weapon).includes('exotic')?8:0;return stat*10+pr*1.8+iq*.04+pot*2+luck*.06+bonus;}
+function combatProfile(c){return{stat:statScore(c),power:powerRank(c),iq:Number(String(c.iq||'100').match(/\d+/)?.[0]||100),abilities:[c.power,c.secondPower].filter(Boolean),atags:[...new Set(abilityTags(c.power).concat(abilityTags(c.secondPower)))],wtags:weaponTags(c.weapon),wmeta:weaponMeta(c.weapon),dtags:defenseTags(c.defense),weak:weaknessTag(c.weakness),weaknessWeapon:c.weaknessWeapon||null,luck:Number(String(c.luck||'0').match(/-?\d+/)?.[0]||0)};}
+function abilityNameForLog(c){return c.power||c.secondPower||'Normal saldırı';}
+function startArenaBattle(){
+ if(slots.length<2){$('arenaStatus').textContent=t('arenaNeedTwo');return;} const ai=Number($('arenaA').value),bi=Number($('arenaB').value);if(ai===bi){$('arenaStatus').textContent=t('arenaNeedDifferent');return;}
+ const A=slots[ai],B=slots[bi],a=combatProfile(A),b=combatProfile(B);let hpA=100,hpB=100,log=[],round=0,maxRounds=12,coolA={},coolB={};const names=c=>c.name||'Character';
+ log.push(`<div class="battleLine"><b>⚔️ ${escapeHtml(names(A))}</b> vs <b>${escapeHtml(names(B))}</b><br>🧬 ${escapeHtml(valueLabel(A.race||'—'))} • ${escapeHtml(valueLabel(A.sub||'Yok'))}<br>⚡ ${escapeHtml(valueLabel(A.power||'—'))} + ${escapeHtml(valueLabel(A.secondPower||'—'))}<br>⚔️ ${escapeHtml(valueLabel(A.weapon||'Yok'))}</div>`);
+ log.push(`<div class="battleLine"><b>🧠 ${escapeHtml(t('combatEngine'))}</b><br>${escapeHtml(names(A))}: ${arenaPower(A).toFixed(1)} ${escapeHtml(t('powerWord'))} • ${a.atags.join(', ')||t('basic')}<br>${escapeHtml(names(B))}: ${arenaPower(B).toFixed(1)} ${escapeHtml(t('powerWord'))} • ${b.atags.join(', ')||t('basic')}</div>`);
+ function attack(att,def,pa,pb,attName,defName,turn){let base=7+pa.stat*1.6+pa.power*.35+Math.random()*8;let lines=[];let special=false;
+  if(pa.atags.includes('time')&&Math.random()<.16){base*=1.9;special=true;lines.push(`⏳ <b>${escapeHtml(attName)}</b> ${escapeHtml(t('timeBreak'))}`);}
+  else if(pa.atags.includes('hax')&&Math.random()<.18){base*=1.75;special=true;lines.push(`🌀 <b>${escapeHtml(attName)}</b> ${escapeHtml(t('realityBreak'))}`);}
+  else if(pa.atags.includes('speed')&&Math.random()<.22){base*=1.35;special=true;lines.push(`💨 <b>${escapeHtml(attName)}</b> ${escapeHtml(t('speedAttack'))}`);}
+  const wt=pa.wtags,wm=pa.wmeta||weaponMeta(att.weapon); if(wt.includes('heavy'))base*=1.18;if(wt.includes('ranged'))base*=1.08;if(wt.includes('holy')&&pb.weak==='holy')base*=1.75;if(wt.includes('exotic'))base*=1.22;base*=wm.damage;if(wm.pierce&&pb.dtags.includes('barrier'))base*=1+wm.pierce;if(wm.defenseBreak)base*=1+wm.defenseBreak;if(wm.crit&&Math.random()<wm.crit){base*=1.35;lines.push(`🎯 <b>${escapeHtml(attName)}</b> ${escapeHtml(t('critical'))}`);}if(wm.control&&Math.random()<wm.control){base*=1.12;lines.push(`⛓️ <b>${escapeHtml(attName)}</b> ${escapeHtml(t('disrupted'))} ${escapeHtml(defName)}.`);}
+  const exactWeaponWeakness=pb.weak==='weapon'&&pb.weaknessWeapon&&String(att.weapon||'')===String(pb.weaknessWeapon);
+  const weaknessHit=exactWeaponWeakness||(pb.weak==='physical'&&wt.length>0);if(weaknessHit){base*=exactWeaponWeakness?2.15:1.45;lines.push(`⚠️ <b>${escapeHtml(t('weaknessHit'))}</b> ${escapeHtml(defName)} ${escapeHtml(t('weaknessUsed'))}${exactWeaponWeakness?` (${escapeHtml(valueLabel(pb.weaknessWeapon))})`:''}`);}
+  if(pa.atags.includes('element')&&['fire','ice','lightning','holy','void'].includes(pb.weak)){base*=1.35;}
+  if(pb.dtags.includes('barrier'))base*=.72;if(pb.dtags.includes('absorb'))base*=.8;if(pb.dtags.includes('reflect')){base*=.88;lines.push(`↩️ ${escapeHtml(defName)} ${escapeHtml(t('reflected'))}`);}
+  if(pb.dtags.includes('adapt')&&!special)base*=.92; if(pa.atags.includes('drain')&&Math.random()<.2){lines.push(`🩸 ${escapeHtml(attName)} ${escapeHtml(t('drained'))}`);}
+  return{damage:Math.max(1,Math.round(base)),lines};}
+ while(hpA>0&&hpB>0&&round<maxRounds){round++;const first=Math.random()<(arenaPower(A)+a.luck*.03)/(arenaPower(A)+arenaPower(B)+Math.abs(a.luck*.03)+Math.abs(b.luck*.03));const order=first?[[A,a,B,b,'A'],[B,b,A,a,'B']]:[[B,b,A,a,'B'],[A,a,B,b,'A']];log.push(`<div class="battleRound">${escapeHtml(t('roundLabel'))} ${round}</div>`);
+  for(const [att,pa,def,pb,key] of order){if(hpA<=0||hpB<=0)break; if(pa.atags.includes('heal')&&Math.random()<.18){const heal=Math.round(5+pa.stat*1.8);if(key==='A')hpA=Math.min(100,hpA+heal);else hpB=Math.min(100,hpB+heal);log.push(`<div class="battleLine">💚 ${escapeHtml(names(att))} ${escapeHtml(t('healed'))}: <b>+${heal} HP</b>.</div>`);continue;}
+    const res=attack(att,def,pa,pb,names(att),names(def),round);if(key==='A')hpB-=res.damage;else hpA-=res.damage;log.push(`<div class="battleLine">${key==='A'?'🟥':'🟦'} <b>${escapeHtml(names(att))}</b> → ${escapeHtml(valueLabel(abilityNameForLog(att)))} + ${escapeHtml(valueLabel(att.weapon||'Yok'))}<br>💥 <b>${res.damage}</b> ${escapeHtml(t('damage'))}. ${res.lines.join(' ')}<br>${escapeHtml(names(A))}: ${Math.max(0,hpA)} HP • ${escapeHtml(names(B))}: ${Math.max(0,hpB)} HP</div>`);
+  }}
+ let winner=hpA>hpB?A:hpB>hpA?B:(Math.random()<arenaPower(A)/(arenaPower(A)+arenaPower(B))?A:B);if(round===maxRounds&&hpA>0&&hpB>0)log.push(`<div class="battleLine">⏱️ ${maxRounds} ${escapeHtml(t('round'))} ${escapeHtml(t('battleFull'))}</div>`);$('arenaStatus').textContent=`${escapeHtml(t('arenaDone'))} • ${round} ${escapeHtml(t('round'))} • ${escapeHtml(t('combatEngine'))}`;$('battleLog').innerHTML=log.join('')+`<div class="winner">🏆 ${escapeHtml(names(winner))} ${escapeHtml(t('wins'))}</div>`;
+}
+function saveSlots(){slots.forEach(ensureCharacterIdentity);localStorage.setItem("wof_slots",JSON.stringify({slots,activeSlot}))}
+function loadSlots(){try{const x=JSON.parse(localStorage.getItem("wof_slots")||"{}");slots=Array.isArray(x.slots)?x.slots:[];slots.forEach(ensureCharacterIdentity);activeSlot=Number.isInteger(x.activeSlot)&&x.activeSlot>=0&&x.activeSlot<slots.length?x.activeSlot:(slots.length?0:null)}catch(e){slots=[];activeSlot=null}}
+setup();$("wheelTitle").dataset.center="FATE";loadTheme();applyLanguage();renderLockGrid();renderComparisonSelectors();switchTab("forge");
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));}
+</script></body></html>

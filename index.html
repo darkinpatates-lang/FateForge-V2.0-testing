@@ -141,6 +141,20 @@ select{width:100%;background:var(--control);color:var(--text);border:1px solid v
 
 </div>
 
+<section id="tab-arena" class="tabPanel">
+ <section class="panel">
+  <div class="sectionHead"><div><h2 id="arenaTitle" style="margin:0">⚔️ FateForge Arena</h2><p id="arenaHint" class="hint" style="margin:5px 0 0">Kaydettiğin iki karakteri seç ve yetenek, silah, savunma ve zayıflık etkileşimleri olan tur bazlı savaşı başlat.</p></div></div>
+  <div class="arenaPickers">
+   <div><label><b id="fighterALabel">🟥 Savaşçı A</b></label><select id="arenaA" onchange="renderArenaPreview()"></select></div>
+   <div><label><b id="fighterBLabel">🟦 Savaşçı B</b></label><select id="arenaB" onchange="renderArenaPreview()"></select></div>
+  </div>
+  <div id="arenaPreview" class="arenaPreview"></div>
+  <button id="arenaStart" class="mainbtn" onclick="startArenaBattle()">⚔️ SAVAŞI BAŞLAT</button>
+  <div id="arenaStatus" class="arenaStatus hint">Önce en az iki karakter oluştur.</div>
+  <div id="battleLog" class="battleLog"></div>
+ </section>
+</section>
+
 <section id="tab-generating" class="tabPanel">
  <section class="panel">
   <div class="sectionHead"><div><h2 id="visualTitle">🎨 FateForge Visual Generator</h2><p id="visualHint">Create a full-body visual from the exact saved Character Card profile.</p></div></div>
